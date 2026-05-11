@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class CompleteMemberProfileRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return (bool) $this->user()?->can('complete-member-profile');
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $memberId = $this->user()?->member?->id;
+
+        return [
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'date_of_birth' => ['nullable', 'date'],
+            'referral_code' => [
+                'nullable',
+                'string',
+                Rule::exists('members', 'referral_code')->where(function ($query) use ($memberId) {
+                    if ($memberId) {
+                        $query->where('id', '!=', $memberId);
+                    }
+
+                    return $query->whereNotNull('user_id');
+                }),
+            ],
+            'profile_image' => ['nullable', 'image', 'max:2048'],
+            'addresses' => ['required', 'array', 'min:1'],
+            'addresses.*.id' => ['nullable', 'integer', 'exists:addresses,id'],
+            'addresses.*.address_type_id' => ['required', 'exists:address_types,id'],
+            'addresses.*.line_1' => ['required', 'string', 'max:255'],
+            'addresses.*.line_2' => ['nullable', 'string', 'max:255'],
+            'addresses.*.city' => ['required', 'string', 'max:255'],
+            'addresses.*.state' => ['nullable', 'string', 'max:255'],
+            'addresses.*.postal_code' => ['nullable', 'string', 'max:30'],
+            'addresses.*.country' => ['required', 'string', 'max:255'],
+            'addresses.*.is_primary' => ['nullable', 'boolean'],
+            'addresses.*.proof_of_address' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
+        ];
+    }
+}

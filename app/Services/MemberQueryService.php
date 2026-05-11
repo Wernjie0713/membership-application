@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Member;
+use Illuminate\Database\Eloquent\Builder;
+
+class MemberQueryService
+{
+    public function applyFilters(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['search'] ?? null, function (Builder $query, string $search) {
+                $like = '%'.$search.'%';
+
+                $query->where(function (Builder $builder) use ($like) {
+                    $builder
+                        ->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('referral_code', 'like', $like)
+                        ->orWhereHas('referrer', function (Builder $referrerQuery) use ($like) {
+                            $referrerQuery
+                                ->where('first_name', 'like', $like)
+                                ->orWhere('last_name', 'like', $like)
+                                ->orWhere('referral_code', 'like', $like);
+                        });
+                });
+            })
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status));
+    }
+
+    public function baseQuery(): Builder
+    {
+        return Member::query()
+            ->with(['referrer', 'addresses.addressType', 'profileImage'])
+            ->withCount('referrals');
+    }
+}
