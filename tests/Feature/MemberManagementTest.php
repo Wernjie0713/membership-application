@@ -32,13 +32,14 @@ class MemberManagementTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->post(route('members.store'), [
+                'username' => 'johndoe',
                 'first_name' => 'John',
                 'last_name' => 'Doe',
                 'email' => 'john@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
                 'phone' => '12345678',
-                'status' => 'approved',
+                'status' => Member::STATUS_ACTIVE,
                 'referral_code' => $referrer->referral_code,
                 'addresses' => [[
                     'address_type_id' => $addressType->id,
@@ -190,7 +191,7 @@ class MemberManagementTest extends TestCase
         $member = Member::factory()->completed()->create([
             'user_id' => $user->id,
             'email' => $user->email,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $types = AddressType::orderBy('name')->get()->values();
@@ -232,22 +233,19 @@ class MemberManagementTest extends TestCase
         $admin = User::factory()->admin()->create();
         $member = Member::factory()->completed()->create([
             'email' => 'delete-me@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
-
-        $user = $member->user;
 
         $response = $this->actingAs($admin)->delete(route('members.destroy', $member));
 
         $response->assertRedirect(route('members.index'));
         $this->assertSoftDeleted('members', ['id' => $member->id]);
-        $this->assertDatabaseMissing('users', ['email' => 'delete-me@example.com']);
 
-        $user->refresh();
+        $user = $member->fresh()->user;
 
-        $this->assertFalse($user->isMember());
-        $this->assertStringStartsWith('deleted+member-'.$member->id.'-', $user->email);
-        $this->assertStringEndsWith('@archived.local', $user->email);
+        $this->assertSame('delete-me@example.com', $user->email);
+        $this->assertNotNull($user->deactivated_at);
+        $this->assertSame(Member::STATUS_DEACTIVATED, $member->fresh()->status);
     }
 
     public function test_admin_can_sort_members_from_list_view(): void
@@ -257,13 +255,13 @@ class MemberManagementTest extends TestCase
         Member::factory()->completed()->create([
             'first_name' => 'Zara',
             'last_name' => 'Tan',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         Member::factory()->completed()->create([
             'first_name' => 'Aaron',
             'last_name' => 'Lee',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $response = $this->actingAs($admin)->get(route('members.index', ['sort' => 'name_asc']));
@@ -276,18 +274,78 @@ class MemberManagementTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $member = Member::factory()->completed()->create([
-            'status' => 'pending',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $response = $this->actingAs($admin)->patch(route('members.status.update', ['member' => $member, 'sort' => 'latest']), [
-            'status' => 'approved',
+            'status' => Member::STATUS_DEACTIVATED,
         ]);
 
         $response->assertRedirect(route('members.index', ['sort' => 'latest']));
-        $this->assertDatabaseHas('members', [
+        $this->assertSoftDeleted('members', [
             'id' => $member->id,
-            'status' => 'approved',
+            'status' => Member::STATUS_DEACTIVATED,
         ]);
+    }
+
+    public function test_admin_can_reactivate_a_deactivated_member_from_list_action(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $member->user->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $member->update([
+            'status' => Member::STATUS_DEACTIVATED,
+        ]);
+
+        $member->delete();
+
+        $response = $this->actingAs($admin)->patch(route('members.status.update', ['member' => $member, 'sort' => 'latest']), [
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $response->assertRedirect(route('members.index', ['sort' => 'latest']));
+
+        $member->refresh();
+
+        $this->assertNull($member->deleted_at);
+        $this->assertSame(Member::STATUS_ACTIVE, $member->status);
+        $this->assertNull($member->user->fresh()->deactivated_at);
+    }
+
+    public function test_deactivated_members_still_show_in_admin_member_list(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $activeMember = Member::factory()->completed()->create([
+            'first_name' => 'Active',
+            'last_name' => 'Member',
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $deactivatedMember = Member::factory()->completed()->create([
+            'first_name' => 'Deactivated',
+            'last_name' => 'Member',
+            'status' => Member::STATUS_DEACTIVATED,
+        ]);
+
+        $deactivatedMember->user->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $deactivatedMember->delete();
+
+        $response = $this->actingAs($admin)->get(route('members.index'));
+
+        $response->assertOk();
+        $response->assertSee($activeMember->full_name);
+        $response->assertSee($deactivatedMember->full_name);
+        $response->assertSee('Deactivated');
     }
 
     public function test_authenticated_user_can_update_member_profile_image(): void
@@ -296,7 +354,7 @@ class MemberManagementTest extends TestCase
         $member = Member::factory()->completed()->create([
             'first_name' => 'Profile',
             'last_name' => 'Image',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $address = $member->addresses()->create([
@@ -313,11 +371,12 @@ class MemberManagementTest extends TestCase
         $response = $this
             ->actingAs($admin)
             ->put(route('members.update', $member), [
+                'username' => $member->user->username,
                 'first_name' => 'Profile',
                 'last_name' => 'Image',
                 'email' => $member->email,
                 'phone' => $member->phone,
-                'status' => 'approved',
+                'status' => Member::STATUS_ACTIVE,
                 'date_of_birth' => optional($member->date_of_birth)->toDateString(),
                 'addresses' => [[
                     'id' => $address->id,
@@ -350,7 +409,7 @@ class MemberManagementTest extends TestCase
         $member = Member::factory()->completed()->create([
             'user_id' => $user->id,
             'email' => $user->email,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $address = $member->addresses()->create([
@@ -409,7 +468,7 @@ class MemberManagementTest extends TestCase
         $member = Member::factory()->completed()->create([
             'user_id' => $user->id,
             'email' => $user->email,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $response = $this
@@ -436,7 +495,7 @@ class MemberManagementTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $member = Member::factory()->completed()->create([
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $response = $this

@@ -28,6 +28,12 @@ class UpdateMemberRequest extends FormRequest
         $member = $this->route('member');
 
         return [
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique(User::class, 'username')->ignore($member->user_id),
+            ],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -39,7 +45,7 @@ class UpdateMemberRequest extends FormRequest
             ],
             'password' => ['nullable', 'confirmed', 'string', 'min:8'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'terminated'])],
+            'status' => ['required', Rule::in(Member::STATUSES)],
             'date_of_birth' => ['nullable', 'date'],
             'referral_code' => [
                 'nullable',

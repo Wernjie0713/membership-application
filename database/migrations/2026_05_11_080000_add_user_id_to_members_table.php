@@ -30,7 +30,7 @@ return new class extends Migration
                 $user = User::query()->firstOrCreate(
                     ['email' => $member->email],
                     [
-                        'name' => trim($member->first_name.' '.$member->last_name),
+                        'username' => 'member'.$member->id,
                         'email_verified_at' => now(),
                         'password' => Str::random(32),
                     ]

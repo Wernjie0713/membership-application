@@ -26,8 +26,8 @@
                     <p class="mt-2 text-[36px] font-bold text-uber-black">{{ $stats['rewards'] }}</p>
                 </div>
                 <div class="rounded-[8px] bg-white p-6 shadow-uber-card">
-                    <p class="text-sm font-medium text-body-gray uppercase tracking-wide">Pending Members</p>
-                    <p class="mt-2 text-[36px] font-bold text-uber-black">{{ $stats['pending_members'] }}</p>
+                    <p class="text-sm font-medium text-body-gray uppercase tracking-wide">Deactivated Members</p>
+                    <p class="mt-2 text-[36px] font-bold text-uber-black">{{ $stats['deactivated_members'] }}</p>
                 </div>
             </div>
 

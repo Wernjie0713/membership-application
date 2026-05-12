@@ -16,7 +16,10 @@ class DashboardController extends Controller
                 'members' => Member::count(),
                 'active_promotions' => Promotion::where('status', 'active')->count(),
                 'rewards' => RewardAchiever::count(),
-                'pending_members' => Member::where('status', 'pending')->count(),
+                'deactivated_members' => Member::withTrashed()
+                    ->where('status', Member::STATUS_DEACTIVATED)
+                    ->whereNotNull('user_id')
+                    ->count(),
             ],
             'recentMembers' => Member::latest()->take(5)->get(),
             'recentRewards' => RewardAchiever::with(['member', 'promotion'])->latest('earned_at')->take(5)->get(),

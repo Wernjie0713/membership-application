@@ -13,8 +13,6 @@ use App\Services\MemberService;
 use App\Services\ReferralTreeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -60,7 +58,7 @@ class MemberController extends Controller
     public function create(): View
     {
         return view('members.create', [
-            'member' => new Member(['status' => 'pending']),
+            'member' => new Member(['status' => Member::STATUS_ACTIVE]),
             'addressTypes' => AddressType::orderBy('name')->get(),
             'cancelRoute' => route('members.index'),
         ]);
@@ -130,39 +128,11 @@ class MemberController extends Controller
      */
     public function destroy(Member $member): RedirectResponse
     {
-        DB::transaction(function () use ($member) {
-            $member->loadMissing('user', 'addresses.documents', 'documents');
-
-            $member->addresses->each(function ($address) {
-                $address->documents->each(function ($document) {
-                    Storage::disk($document->disk)->delete($document->path);
-                    $document->delete();
-                });
-                $address->delete();
-            });
-
-            $member->documents->each(function ($document) {
-                Storage::disk($document->disk)->delete($document->path);
-                $document->delete();
-            });
-
-            if ($member->user) {
-                $archivedEmail = 'deleted+member-'.$member->id.'-'.$member->user->id.'@archived.local';
-
-                $member->user->retract('member');
-                $member->user->update([
-                    'email' => $archivedEmail,
-                    'password' => bcrypt(\Illuminate\Support\Str::random(40)),
-                    'remember_token' => \Illuminate\Support\Str::random(60),
-                ]);
-            }
-
-            $member->delete();
-        });
+        $this->memberService->deactivateByAdmin($member);
 
         return redirect()
             ->route('members.index')
-            ->with('status', 'Member deleted successfully. The linked member login has been archived.');
+            ->with('status', 'Member deactivated successfully. The linked login is blocked from future access.');
     }
 
     public function export(Request $request)
@@ -178,12 +148,10 @@ class MemberController extends Controller
     public function updateStatus(Request $request, Member $member): RedirectResponse
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'terminated'])],
+            'status' => ['required', Rule::in(Member::STATUSES)],
         ]);
 
-        $member->update([
-            'status' => $validated['status'],
-        ]);
+        $this->memberService->syncAdminStatus($member, $validated['status']);
 
         return redirect()
             ->route('members.index', $request->query())

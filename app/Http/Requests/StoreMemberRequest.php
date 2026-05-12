@@ -24,12 +24,13 @@ class StoreMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:members,email', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'string', 'min:8'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'terminated'])],
+            'status' => ['required', Rule::in(Member::STATUSES)],
             'date_of_birth' => ['nullable', 'date'],
             'referral_code' => ['nullable', 'string', Rule::exists('members', 'referral_code')->where(fn ($query) => $query->whereNotNull('user_id'))],
             'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],

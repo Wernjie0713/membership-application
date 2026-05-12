@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('phone', 50)->nullable();
             $table->string('referral_code')->unique();
             $table->date('date_of_birth')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('active');
             $table->timestamps();
             $table->softDeletes();
         });

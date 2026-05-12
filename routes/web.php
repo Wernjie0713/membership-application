@@ -13,7 +13,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active-user'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
     Route::prefix('member')->name('member.')->middleware('can:complete-member-profile')->group(function () {
@@ -29,31 +29,31 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::middleware(['auth', 'verified', 'can:view-admin-dashboard'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified', 'can:view-admin-dashboard'])->group(function () {
     Route::get('/admin/dashboard', DashboardController::class)->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'verified', 'can:manage-members'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified', 'can:manage-members'])->group(function () {
     Route::get('/members-export', [MemberController::class, 'export'])->name('members.export');
     Route::patch('/members/{member}/status', [MemberController::class, 'updateStatus'])->name('members.status.update');
     Route::post('/members/{member}/image', [MemberController::class, 'updateProfileImage'])->name('members.image.update');
     Route::resource('members', MemberController::class);
 });
 
-Route::middleware(['auth', 'verified', 'can:manage-promotions'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified', 'can:manage-promotions'])->group(function () {
     Route::patch('/promotions/{promotion}/status', [PromotionController::class, 'updateStatus'])->name('promotions.status.update');
     Route::resource('promotions', PromotionController::class);
 });
 
-Route::middleware(['auth', 'verified', 'can:view-reward-reports'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified', 'can:view-reward-reports'])->group(function () {
     Route::get('/reward-report', [RewardReportController::class, 'index'])->name('rewards.index');
 });
 
-Route::middleware(['auth', 'verified', 'can:export-rewards'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified', 'can:export-rewards'])->group(function () {
     Route::get('/reward-report/export', [RewardReportController::class, 'export'])->name('rewards.export');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active-user'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

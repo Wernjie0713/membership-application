@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule;
+use App\Http\Middleware\EnsureUserIsActive;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('promotions:process-rewards')->daily();
     })
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'active-user' => EnsureUserIsActive::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -16,6 +16,14 @@ class Member extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_DEACTIVATED = 'deactivated';
+
+    public const STATUSES = [
+        self::STATUS_ACTIVE,
+        self::STATUS_DEACTIVATED,
+    ];
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -93,7 +101,7 @@ class Member extends Model
     {
         return $query
             ->whereNotNull('user_id')
-            ->where('status', 'approved');
+            ->where('status', self::STATUS_ACTIVE);
     }
 
     protected function fullName(): Attribute

@@ -19,9 +19,10 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'deactivated_at',
     ];
 
     /**
@@ -44,6 +45,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'deactivated_at' => 'datetime',
         ];
     }
 
@@ -67,5 +69,10 @@ class User extends Authenticatable
     public function isMember(): bool
     {
         return $this->isA('member');
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
     }
 }

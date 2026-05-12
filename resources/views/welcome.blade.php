@@ -89,7 +89,7 @@
                         </div>
                         <h3 class="text-2xl font-bold text-uber-black mb-4">Rewards</h3>
                         <p class="text-body-gray text-base leading-relaxed">
-                            Tier-based promotional rewards calculated daily. Build your referral tree and get rewarded for fully onboarded, approved members.
+                            Tier-based promotional rewards calculated daily. Build your referral tree and get rewarded for fully onboarded, active members.
                         </p>
                     </div>
                 </div>

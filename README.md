@@ -79,7 +79,7 @@ Current reward processing rules:
 
 - only active promotions are processed
 - processing runs daily through Laravel Scheduler
-- only completed and `approved` member profiles count as valid referrals
+- only completed and `active` member profiles count as valid referrals
 - duplicate rewards are prevented by database uniqueness and service checks
 
 ## Tech Stack
@@ -218,7 +218,7 @@ The current suite covers:
 ## Notes
 
 - The interview brief originally reads like a one-step member registration flow. This implementation intentionally uses a two-step flow to better separate authentication from membership onboarding.
-- Member deletion archives the linked login account and removes the member from active use.
+- Admin deletion deactivates the linked login account and keeps the member visible in admin history, while member self-delete permanently removes personal data and leaves an anonymized tombstone for referral/reward history.
 - The project currently uses Blade as the frontend, which is aligned with the interview brief.
 
 ## Environment Note

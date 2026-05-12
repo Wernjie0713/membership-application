@@ -123,6 +123,11 @@
             <div class="grid gap-6 md:grid-cols-2">
                 @if ($showPasswordFields)
                     <div>
+                        <x-input-label for="username" value="Username" />
+                        <x-text-input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $member->user?->username)" required />
+                        <x-input-error class="mt-2" :messages="$errors->get('username')" />
+                    </div>
+                    <div>
                         <x-input-label for="password" value="Login Password" />
                         <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" :required="$passwordRequired" />
                         <x-input-error class="mt-2" :messages="$errors->get('password')" />
@@ -130,6 +135,13 @@
                     <div>
                         <x-input-label for="password_confirmation" value="Confirm Login Password" />
                         <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" :required="$passwordRequired" />
+                    </div>
+                @endif
+                @if (! $showPasswordFields)
+                    <div>
+                        <x-input-label for="username" value="Username" />
+                        <x-text-input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $member->user?->username)" required />
+                        <x-input-error class="mt-2" :messages="$errors->get('username')" />
                     </div>
                 @endif
                 <div>
@@ -166,7 +178,7 @@
                     <div>
                         <x-input-label for="status" value="Status" />
                         <select id="status" name="status" class="field-select mt-1 block w-full">
-                            @foreach (['pending', 'approved', 'rejected', 'terminated'] as $status)
+                            @foreach (\App\Models\Member::STATUSES as $status)
                                 <option value="{{ $status }}" @selected(old('status', $member->status) === $status)>{{ ucfirst($status) }}</option>
                             @endforeach
                         </select>

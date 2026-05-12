@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\Address;
+use App\Models\Document;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MemberService
 {
@@ -16,7 +18,7 @@ class MemberService
     {
         return DB::transaction(function () use ($data) {
             $user = User::create([
-                'name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')),
+                'username' => $data['username'],
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'email_verified_at' => now(),
@@ -29,6 +31,10 @@ class MemberService
             $this->syncAddresses($member, $data['addresses'] ?? []);
             $this->storeProfileImage($member, $data['profile_image'] ?? null);
 
+            if (($data['status'] ?? Member::STATUS_ACTIVE) === Member::STATUS_DEACTIVATED) {
+                $this->syncAdminStatus($member, Member::STATUS_DEACTIVATED);
+            }
+
             return $member->fresh(['user', 'addresses.addressType', 'documents', 'referrer', 'referrals']);
         });
     }
@@ -36,11 +42,26 @@ class MemberService
     public function update(Member $member, array $data): Member
     {
         return DB::transaction(function () use ($member, $data) {
+            $originalStatus = $member->status;
+            $wasTrashed = $member->trashed();
+            $userWasDeactivated = $member->user?->isDeactivated() ?? false;
+
             $member->update($this->memberPayload($data, $member, $member->user));
             $this->syncUserFromMemberData($member->user, $data);
 
             $this->syncAddresses($member, $data['addresses'] ?? []);
             $this->storeProfileImage($member, $data['profile_image'] ?? null);
+
+            if (
+                array_key_exists('status', $data)
+                && (
+                    $data['status'] !== $originalStatus
+                    || $wasTrashed
+                    || ($data['status'] === Member::STATUS_ACTIVE && $userWasDeactivated)
+                )
+            ) {
+                $this->syncAdminStatus($member, $data['status']);
+            }
 
             return $member->fresh(['user', 'addresses.addressType', 'documents', 'referrer', 'referrals']);
         });
@@ -56,7 +77,7 @@ class MemberService
             $user->assign('member');
 
             $member = Member::create($this->memberPayload(
-                $data + ['email' => $user->email, 'status' => 'pending'],
+                $data + ['email' => $user->email, 'status' => Member::STATUS_ACTIVE],
                 null,
                 $user
             ));
@@ -92,6 +113,68 @@ class MemberService
             $this->storeProfileImage($member, $file);
 
             return $member->fresh(['profileImage']);
+        });
+    }
+
+    public function deactivateByAdmin(Member $member): void
+    {
+        $this->syncAdminStatus($member, Member::STATUS_DEACTIVATED);
+    }
+
+    public function syncAdminStatus(Member $member, string $status): void
+    {
+        DB::transaction(function () use ($member, $status) {
+            $member->loadMissing('user');
+
+            $member->forceFill([
+                'status' => $status,
+            ])->saveQuietly();
+
+            if ($member->user) {
+                $member->user->update([
+                    'deactivated_at' => $status === Member::STATUS_DEACTIVATED ? now() : null,
+                    'remember_token' => Str::random(60),
+                ]);
+            }
+
+            if ($status === Member::STATUS_DEACTIVATED && ! $member->trashed()) {
+                $member->delete();
+            }
+
+            if ($status === Member::STATUS_ACTIVE && $member->trashed()) {
+                $member->restore();
+            }
+        });
+    }
+
+    public function permanentlyDeleteForUser(User $user): void
+    {
+        DB::transaction(function () use ($user) {
+            $member = $user->member()->with([
+                'addresses.documents',
+                'documents',
+                'rewardAchievers',
+            ])->first();
+
+            if ($member) {
+                $this->deleteMemberOwnedFilesAndAddresses($member);
+
+                $member->update([
+                    'first_name' => 'Deleted',
+                    'last_name' => 'Member',
+                    'email' => $this->uniqueDeletedMemberEmail($member),
+                    'phone' => null,
+                    'date_of_birth' => null,
+                    'user_id' => null,
+                    'status' => Member::STATUS_DEACTIVATED,
+                ]);
+
+                if (! $member->trashed()) {
+                    $member->delete();
+                }
+            }
+
+            $user->delete();
         });
     }
 
@@ -136,7 +219,7 @@ class MemberService
         }
 
         $payload = [
-            'name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')),
+            'username' => $data['username'] ?? $user->username,
         ];
 
         if (! empty($data['email'])) {
@@ -184,12 +267,7 @@ class MemberService
             ->whereNotIn('id', $keptIds)
             ->get()
             ->each(function (Address $address) {
-                $address->documents()->each(function ($document) {
-                    Storage::disk($document->disk)->delete($document->path);
-                    $document->delete();
-                });
-
-                $address->delete();
+                $this->deleteAddressWithDocuments($address);
             });
     }
 
@@ -218,6 +296,32 @@ class MemberService
         ]);
     }
 
+    protected function deleteMemberOwnedFilesAndAddresses(Member $member): void
+    {
+        $member->addresses->each(function (Address $address) {
+            $this->deleteAddressWithDocuments($address);
+        });
+
+        $member->documents->each(function (Document $document) {
+            $this->deleteDocumentFile($document);
+        });
+    }
+
+    protected function deleteAddressWithDocuments(Address $address): void
+    {
+        $address->documents()->get()->each(function (Document $document) {
+            $this->deleteDocumentFile($document);
+        });
+
+        $address->delete();
+    }
+
+    protected function deleteDocumentFile(Document $document): void
+    {
+        Storage::disk($document->disk)->delete($document->path);
+        $document->delete();
+    }
+
     protected function storeProofOfAddress(Address $address, UploadedFile $file): void
     {
         $existing = $address->proofDocument;
@@ -237,5 +341,14 @@ class MemberService
             'mime_type' => $file->getClientMimeType(),
             'size' => $file->getSize(),
         ]);
+    }
+
+    protected function uniqueDeletedMemberEmail(Member $member): string
+    {
+        do {
+            $email = 'deleted-member-'.$member->id.'-'.Str::lower(Str::random(12)).'@deleted.local';
+        } while (Member::withTrashed()->where('email', $email)->exists());
+
+        return $email;
     }
 }

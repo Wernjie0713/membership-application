@@ -43,6 +43,44 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('admin.dashboard', absolute: false));
     }
 
+    public function test_deactivated_users_cannot_authenticate_even_with_correct_password(): void
+    {
+        $user = User::factory()->member()->create([
+            'deactivated_at' => now(),
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => \App\Http\Requests\Auth\LoginRequest::DEACTIVATED_MESSAGE,
+            ]);
+    }
+
+    public function test_authenticated_deactivated_users_are_logged_out_on_next_request(): void
+    {
+        $user = User::factory()->member()->create();
+
+        $this->actingAs($user);
+
+        $user->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $response = $this->get('/dashboard');
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+        $response->assertSessionHasErrors([
+            'email' => \App\Http\Requests\Auth\LoginRequest::DEACTIVATED_MESSAGE,
+        ]);
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();

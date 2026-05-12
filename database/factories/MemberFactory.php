@@ -28,7 +28,7 @@ class MemberFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
             'referral_code' => Str::upper(fake()->unique()->bothify('REF####')),
-            'status' => fake()->randomElement(['pending', 'approved', 'rejected']),
+            'status' => \App\Models\Member::STATUS_ACTIVE,
             'date_of_birth' => fake()->dateTimeBetween('-50 years', '-18 years'),
         ];
     }
@@ -43,7 +43,7 @@ class MemberFactory extends Factory
             $user = User::query()->firstOrCreate(
                 ['email' => $member->email],
                 [
-                    'name' => $member->full_name,
+                    'username' => fake()->unique()->userName(),
                     'email_verified_at' => now(),
                     'password' => Hash::make('password'),
                 ]

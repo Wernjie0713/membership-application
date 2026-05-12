@@ -35,6 +35,12 @@ class MemberQueryService
     public function baseQuery(): Builder
     {
         return Member::query()
+            ->withTrashed()
+            ->where(function (Builder $query) {
+                $query
+                    ->whereNull('deleted_at')
+                    ->orWhereNotNull('user_id');
+            })
             ->with(['referrer', 'addresses.addressType', 'profileImage'])
             ->withCount('referrals');
     }

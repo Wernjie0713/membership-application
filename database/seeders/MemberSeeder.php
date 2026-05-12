@@ -22,14 +22,14 @@ class MemberSeeder extends Seeder
             'first_name' => 'Alice',
             'last_name' => 'Tan',
             'email' => 'alice@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $memberB = Member::factory()->completed()->create([
             'first_name' => 'Ben',
             'last_name' => 'Lee',
             'email' => 'ben@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'referrer_id' => $memberA->id,
             'created_at' => now()->subDays(20),
         ]);
@@ -38,7 +38,7 @@ class MemberSeeder extends Seeder
             'first_name' => 'Cindy',
             'last_name' => 'Ng',
             'email' => 'cindy@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'referrer_id' => $memberB->id,
             'created_at' => now()->subDays(18),
         ]);
@@ -47,7 +47,7 @@ class MemberSeeder extends Seeder
             'first_name' => 'Daniel',
             'last_name' => 'Goh',
             'email' => 'daniel@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'referrer_id' => $memberB->id,
             'created_at' => now()->subDays(16),
         ]);
@@ -56,7 +56,7 @@ class MemberSeeder extends Seeder
             'first_name' => 'Eva',
             'last_name' => 'Lim',
             'email' => 'eva@example.com',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'referrer_id' => $memberD->id,
             'created_at' => now()->subDays(14),
         ]);
@@ -86,15 +86,28 @@ class MemberSeeder extends Seeder
 
         Member::factory(8)->completed()->create([
             'referrer_id' => $memberA->id,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'created_at' => now()->subDays(10),
         ]);
 
         Member::factory(45)->completed()->create([
             'referrer_id' => $memberB->id,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'created_at' => now()->subDays(8),
         ]);
+
+        $deactivatedMember = Member::factory()->completed()->create([
+            'first_name' => 'Deactivated',
+            'last_name' => 'Member',
+            'email' => 'deactivated.member@example.com',
+            'status' => Member::STATUS_DEACTIVATED,
+        ]);
+
+        $deactivatedMember->user?->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $deactivatedMember->delete();
 
         $promotion = Promotion::first();
 

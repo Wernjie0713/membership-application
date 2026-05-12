@@ -29,7 +29,7 @@ class MemberPortalController extends Controller
         return view('member.onboarding', [
             'member' => new Member([
                 'email' => $request->user()->email,
-                'status' => 'pending',
+                'status' => Member::STATUS_ACTIVE,
             ]),
             'addressTypes' => AddressType::orderBy('name')->get(),
             'cancelRoute' => route('dashboard'),

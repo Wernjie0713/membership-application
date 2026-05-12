@@ -6,16 +6,10 @@
             || (($perPage ?? 10) !== 10);
 
         $statusStyles = [
-            'approved' => [
+            'active' => [
                 'dot' => 'bg-emerald-500',
             ],
-            'pending' => [
-                'dot' => 'bg-amber-500',
-            ],
-            'rejected' => [
-                'dot' => 'bg-red-500',
-            ],
-            'terminated' => [
+            'deactivated' => [
                 'dot' => 'bg-slate-500',
             ],
         ];
@@ -54,7 +48,7 @@
                         <x-input-label for="status" value="Status" />
                         <select id="status" name="status" class="field-select mt-2 block w-full">
                             <option value="">All statuses</option>
-                            @foreach (['pending', 'approved', 'rejected', 'terminated'] as $status)
+                            @foreach (\App\Models\Member::STATUSES as $status)
                                 <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
                             @endforeach
                         </select>
@@ -99,7 +93,7 @@
                         </thead>
                         <tbody class="divide-y divide-chip-gray bg-white">
                             @forelse ($members as $member)
-                                @php($statusStyle = $statusStyles[$member->status] ?? $statusStyles['terminated'])
+                                @php($statusStyle = $statusStyles[$member->status] ?? $statusStyles['deactivated'])
                                 <tr>
                                     <td class="px-6 py-4">
                                         <div class="font-medium text-uber-black">{{ $member->full_name }}</div>
@@ -133,7 +127,7 @@
 
                                                         <div class="my-2 border-t border-chip-gray"></div>
 
-                                                        @foreach (['pending', 'approved', 'rejected', 'terminated'] as $status)
+                                                        @foreach (\App\Models\Member::STATUSES as $status)
                                                             @continue($status === $member->status)
 
                                                             <form method="POST" action="{{ route('members.status.update', ['member' => $member] + request()->query()) }}">

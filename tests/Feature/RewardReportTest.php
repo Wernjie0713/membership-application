@@ -31,11 +31,11 @@ class RewardReportTest extends TestCase
         $member = Member::factory()->completed()->create([
             'first_name' => 'Alice',
             'last_name' => 'Tan',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
         Member::factory(12)->completed()->create([
             'referrer_id' => $member->id,
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
             'created_at' => now()->subDays(5),
         ]);
 
@@ -78,10 +78,10 @@ class RewardReportTest extends TestCase
         $this->assertDatabaseCount('reward_achievers', 0);
     }
 
-    public function test_reward_processing_ignores_non_approved_referred_members(): void
+    public function test_reward_processing_ignores_deactivated_referred_members(): void
     {
         $promotion = Promotion::create([
-            'name' => 'Approval Referral Drive',
+            'name' => 'Deactivated Referral Drive',
             'status' => 'active',
             'start_date' => now()->subMonth(),
             'end_date' => now()->addMonth(),
@@ -95,10 +95,10 @@ class RewardReportTest extends TestCase
             'is_recurring' => false,
         ]);
 
-        $member = Member::factory()->completed()->create(['status' => 'approved']);
+        $member = Member::factory()->completed()->create(['status' => Member::STATUS_ACTIVE]);
         Member::factory()->completed()->create([
             'referrer_id' => $member->id,
-            'status' => 'pending',
+            'status' => Member::STATUS_DEACTIVATED,
             'created_at' => now()->subDay(),
         ]);
 
@@ -124,7 +124,7 @@ class RewardReportTest extends TestCase
         $member = Member::factory()->completed()->create([
             'first_name' => 'Chris',
             'last_name' => 'Ng',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $primaryPromotion = Promotion::create([
@@ -212,13 +212,13 @@ class RewardReportTest extends TestCase
         $matchingMember = Member::factory()->completed()->create([
             'first_name' => 'Nadia',
             'last_name' => 'Tan',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $otherMember = Member::factory()->completed()->create([
             'first_name' => 'Oscar',
             'last_name' => 'Lim',
-            'status' => 'approved',
+            'status' => Member::STATUS_ACTIVE,
         ]);
 
         $matchingMember->rewardAchievers()->create([
