@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $member->full_name }}</h2>
-            <a href="{{ route('members.edit', $member) }}" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500">Edit Member</a>
+            <h2 class="font-bold text-[32px] text-uber-black leading-tight">{{ $member->full_name }}</h2>
+            <a href="{{ route('members.edit', $member) }}" class="rounded-full bg-uber-black px-4 py-2 text-sm font-medium text-white hover:bg-uber-black/90 transition">Edit Member</a>
         </div>
     </x-slot>
 
@@ -10,84 +10,84 @@
         <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
             <x-flash-message />
 
-            <div class="grid gap-6 lg:grid-cols-3">
-                <div class="rounded-lg bg-white p-6 shadow-sm lg:col-span-2">
-                    <h3 class="text-lg font-semibold text-gray-900">Member Details</h3>
-                    <dl class="mt-4 grid gap-4 md:grid-cols-2">
+            <div class="grid gap-8 lg:grid-cols-3 mt-8">
+                <div class="rounded-[8px] bg-white p-8 shadow-uber-card lg:col-span-2">
+                    <h3 class="text-2xl font-bold text-uber-black">Member Details</h3>
+                    <dl class="mt-6 grid gap-6 md:grid-cols-2">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Login Account</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->user?->email ?: 'Not linked' }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Login Account</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->user?->email ?: 'Not linked' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Email</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->email }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Email</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->email }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Phone</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->phone ?: '-' }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Phone</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->phone ?: '-' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Status</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($member->status) }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Status</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ ucfirst($member->status) }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Referral Code</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->referral_code }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Referral Code</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->referral_code }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Referrer</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->referrer?->full_name ?: '-' }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Referrer</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->referrer?->full_name ?: '-' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Profile Image</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $member->profileImage?->original_name ?: 'Not uploaded' }}</dd>
+                            <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Profile Image</dt>
+                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->profileImage?->original_name ?: 'Not uploaded' }}</dd>
                         </div>
                     </dl>
                 </div>
 
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900">Referral Summary</h3>
-                    <p class="mt-4 text-3xl font-semibold text-gray-900">{{ $member->referrals->count() }}</p>
-                    <p class="text-sm text-gray-500">Direct referrals</p>
-                    <p class="mt-6 text-sm text-gray-500">Total referral tree size</p>
-                    <p class="mt-1 text-2xl font-semibold text-gray-900">{{ $referralTree->count() }}</p>
+                <div class="rounded-[8px] bg-white p-8 shadow-uber-card">
+                    <h3 class="text-2xl font-bold text-uber-black">Referral Summary</h3>
+                    <p class="mt-6 text-[36px] font-bold text-uber-black">{{ $member->referrals->count() }}</p>
+                    <p class="text-sm font-medium text-body-gray uppercase tracking-wide">Direct referrals</p>
+                    <p class="mt-8 text-[36px] font-bold text-uber-black">{{ $referralTree->count() }}</p>
+                    <p class="text-sm font-medium text-body-gray uppercase tracking-wide">Total referral tree size</p>
                 </div>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-2">
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900">Addresses</h3>
-                    <div class="mt-4 space-y-4">
+            <div class="grid gap-8 lg:grid-cols-2 mt-8">
+                <div class="rounded-[8px] bg-white p-8 shadow-uber-card">
+                    <h3 class="text-2xl font-bold text-uber-black">Addresses</h3>
+                    <div class="mt-6 space-y-4">
                         @forelse ($member->addresses as $address)
-                            <div class="rounded-md border border-gray-100 p-4">
-                                <p class="font-medium text-gray-900">{{ $address->addressType?->name }}</p>
-                                <p class="mt-1 text-sm text-gray-700">{{ $address->line_1 }}</p>
+                            <div class="border-b border-chip-gray pb-4 last:border-0 last:pb-0">
+                                <p class="font-medium text-uber-black text-lg">{{ $address->addressType?->name }}</p>
+                                <p class="mt-2 text-sm text-body-gray">{{ $address->line_1 }}</p>
                                 @if ($address->line_2)
-                                    <p class="text-sm text-gray-700">{{ $address->line_2 }}</p>
+                                    <p class="text-sm text-body-gray">{{ $address->line_2 }}</p>
                                 @endif
-                                <p class="text-sm text-gray-700">{{ $address->city }}, {{ $address->state }} {{ $address->postal_code }}</p>
-                                <p class="text-sm text-gray-700">{{ $address->country }}</p>
-                                <p class="mt-2 text-xs text-gray-500">Proof: {{ $address->proofDocument?->original_name ?: 'Not uploaded' }}</p>
+                                <p class="text-sm text-body-gray">{{ $address->city }}, {{ $address->state }} {{ $address->postal_code }}</p>
+                                <p class="text-sm text-body-gray">{{ $address->country }}</p>
+                                <p class="mt-2 text-xs text-muted-gray uppercase tracking-wide">Proof: {{ $address->proofDocument?->original_name ?: 'Not uploaded' }}</p>
                             </div>
                         @empty
-                            <p class="text-sm text-gray-500">No addresses found.</p>
+                            <p class="text-sm text-muted-gray">No addresses found.</p>
                         @endforelse
                     </div>
                 </div>
 
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900">Referral Tree</h3>
-                    <div class="mt-4 space-y-3">
+                <div class="rounded-[8px] bg-white p-8 shadow-uber-card">
+                    <h3 class="text-2xl font-bold text-uber-black">Referral Tree</h3>
+                    <div class="mt-6 space-y-4">
                         @forelse ($referralTree as $entry)
-                            <div class="flex items-center justify-between rounded-md border border-gray-100 px-4 py-3">
+                            <div class="flex items-center justify-between border-b border-chip-gray pb-4 last:border-0 last:pb-0">
                                 <div>
-                                    <p class="font-medium text-gray-900">{{ $entry['member']->full_name }}</p>
-                                    <p class="text-sm text-gray-500">{{ $entry['member']->referral_code }}</p>
+                                    <p class="font-medium text-uber-black text-lg">{{ $entry['member']->full_name }}</p>
+                                    <p class="text-sm text-body-gray">{{ $entry['member']->referral_code }}</p>
                                 </div>
-                                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase text-indigo-700">Level {{ $entry['level'] }}</span>
+                                <span class="rounded-full bg-chip-gray px-3 py-1 text-xs font-semibold uppercase text-uber-black">Level {{ $entry['level'] }}</span>
                             </div>
                         @empty
-                            <p class="text-sm text-gray-500">No referral descendants yet.</p>
+                            <p class="text-sm text-muted-gray">No referral descendants yet.</p>
                         @endforelse
                     </div>
                 </div>

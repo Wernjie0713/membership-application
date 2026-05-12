@@ -2,9 +2,9 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        <div class="mb-6">
-            <h1 class="text-xl font-semibold text-gray-900">Create Member Account</h1>
-            <p class="mt-2 text-sm text-gray-600">Step 1 creates your login account. After sign in, step 2 completes your membership profile, addresses, uploads, and optional referral code.</p>
+        <div class="mb-8">
+            <h1 class="text-[28px] font-bold text-uber-black leading-tight">Create Member Account</h1>
+            <p class="mt-2 text-sm text-body-gray">Step 1 creates your login account. After sign in, step 2 completes your membership profile, addresses, uploads, and optional referral code.</p>
         </div>
 
         <!-- Name -->
@@ -44,8 +44,8 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+        <div class="flex items-center justify-end mt-6">
+            <a class="text-sm text-body-gray hover:text-uber-black rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-uber-black transition" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 

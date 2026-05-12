@@ -1,66 +1,226 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Blackwell Members
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 11 membership application built for a backend interview task. The system manages members, addresses, polymorphic documents, referral relationships, promotion rewards, reporting, and exports.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project uses a role-based flow with `silber/bouncer`:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- `admin` users manage the system
+- `member` users register, complete their membership profile, refer others, and view their own referral and reward data
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The implementation keeps `users` as the login identity and `members` as the business profile.
 
-## Learning Laravel
+## Key Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Admin dashboard with member, promotion, and reward summary
+- Member CRUD with:
+  - personal details
+  - multiple addresses
+  - address types
+  - profile image upload
+  - proof-of-address upload
+- Polymorphic documents for member profile images and address proof files
+- Referral system with:
+  - unique referral code generation
+  - referral code registration
+  - referrer display
+  - multi-level referral tree
+- Promotion reward system with:
+  - promotion period management
+  - configurable reward tiers
+  - scheduled daily reward processing
+  - reward reporting and export
+- Member list export and reward report export
+- Role and permission management using `silber/bouncer`
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Roles
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Admin
 
-## Laravel Sponsors
+- Access admin dashboard
+- Manage members
+- Manage promotions
+- View reward reports
+- Export member list and reward reports
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Member
 
-### Premium Partners
+- Register a login account
+- Complete membership onboarding
+- Maintain own member profile
+- View own referral code
+- View own referral tree
+- View own rewards
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Registration Flow
 
-## Contributing
+This project intentionally uses a two-step registration flow:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. Public registration creates the login account only
+2. After sign in, the user completes the membership profile with:
+   - personal details
+   - addresses
+   - uploads
+   - optional referral code
 
-## Code of Conduct
+This keeps authentication and membership profile completion separate while still ensuring that referral participation and reward eligibility only begin after onboarding is completed.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Reward Rules
 
-## Security Vulnerabilities
+Active promotions use these reward tiers:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- Tier 1: 10 referrals -> USD 100
+- Tier 2: 50 referrals -> USD 500
+- Tier 3: 100 referrals -> USD 1000
+- Tier 4: every 10 referrals beyond 100 -> USD 150 each
 
-## License
+Current reward processing rules:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- only active promotions are processed
+- processing runs daily through Laravel Scheduler
+- only completed and `approved` member profiles count as valid referrals
+- duplicate rewards are prevented by database uniqueness and service checks
+
+## Tech Stack
+
+- Laravel 11
+- Laravel Breeze
+- Blade
+- Tailwind CSS
+- Alpine.js
+- `silber/bouncer`
+- `maatwebsite/excel`
+
+## Project Structure
+
+- `app/Http/Controllers` - web controllers
+- `app/Services` - business logic for members, rewards, reporting, redirects, and referral tree
+- `app/Models` - Eloquent models
+- `database/migrations` - schema
+- `database/seeders` - sample seed data
+- `resources/views` - Blade views
+- `tests/Feature` - feature tests
+- `plan` - implementation planning notes
+
+## Main Screens
+
+- Landing page
+- Login and registration
+- Member onboarding
+- Admin dashboard
+- Member list
+- Member detail
+- Member edit/create
+- Promotions
+- Reward report
+- Member portal dashboard
+
+## Setup
+
+### Requirements
+
+- PHP 8.2+
+- Composer
+- Node.js + npm
+- MySQL or another Laravel-supported database
+
+### Installation
+
+```bash
+composer install
+npm install
+php artisan key:generate
+```
+
+Create `.env` from `.env.example`, then update the database configuration.
+
+Windows:
+
+```powershell
+copy .env.example .env
+```
+
+macOS / Linux:
+
+```bash
+cp .env.example .env
+```
+
+Update `.env` with your database credentials, then run:
+
+```bash
+php artisan migrate --seed
+php artisan storage:link
+```
+
+### Run locally
+
+For backend:
+
+```bash
+php artisan serve
+```
+
+For frontend development:
+
+```bash
+npm run dev
+```
+
+For a production asset build:
+
+```bash
+npm run build
+```
+
+## Default Seeded Account
+
+Admin login:
+
+- Email: `admin@example.com`
+- Password: `password`
+
+## Scheduler
+
+The daily reward processor is:
+
+```bash
+php artisan promotions:process-rewards
+```
+
+It is registered in the Laravel scheduler, so in a real deployment you should also run:
+
+```bash
+php artisan schedule:run
+```
+
+or configure a cron entry for Laravel Scheduler.
+
+## Testing
+
+Run the full test suite:
+
+```bash
+php artisan test
+```
+
+The current suite covers:
+
+- auth flow
+- two-step registration
+- member management
+- referral tree behavior
+- reward processing rules
+- reward reporting access
+- profile updates
+
+## Notes
+
+- The interview brief originally reads like a one-step member registration flow. This implementation intentionally uses a two-step flow to better separate authentication from membership onboarding.
+- Member deletion archives the linked login account and removes the member from active use.
+- The project currently uses Blade as the frontend, which is aligned with the interview brief.
+
+## Environment Note
+
+If your PHP CLI shows an `intl` extension warning in Laragon, enable `php_intl` in your PHP installation. The app can still run and test without it in many cases, but it should be enabled for a clean environment.
