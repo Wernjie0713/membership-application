@@ -21,6 +21,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/onboarding', [MemberPortalController::class, 'storeOnboarding'])->name('onboarding.store');
         Route::get('/profile', [MemberPortalController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [MemberPortalController::class, 'update'])->name('profile.update');
+        Route::post('/profile/image', [MemberPortalController::class, 'updateProfileImage'])->name('profile.image.update');
 
         Route::middleware(['verified', 'can:access-member-portal'])->group(function () {
             Route::get('/dashboard', [MemberPortalController::class, 'dashboard'])->name('dashboard');
@@ -35,6 +36,7 @@ Route::middleware(['auth', 'verified', 'can:view-admin-dashboard'])->group(funct
 Route::middleware(['auth', 'verified', 'can:manage-members'])->group(function () {
     Route::get('/members-export', [MemberController::class, 'export'])->name('members.export');
     Route::patch('/members/{member}/status', [MemberController::class, 'updateStatus'])->name('members.status.update');
+    Route::post('/members/{member}/image', [MemberController::class, 'updateProfileImage'])->name('members.image.update');
     Route::resource('members', MemberController::class);
 });
 

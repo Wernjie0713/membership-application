@@ -20,6 +20,7 @@ class MemberManagementTest extends TestCase
 
         Storage::fake('public');
         AddressType::firstOrCreate(['name' => 'Residential Address'], ['status' => 'active']);
+        AddressType::firstOrCreate(['name' => 'Correspondence Address'], ['status' => 'active']);
     }
 
     public function test_authenticated_user_can_create_member_with_address_and_files(): void
@@ -133,6 +134,99 @@ class MemberManagementTest extends TestCase
         $this->assertNotNull($member->referral_code);
     }
 
+    public function test_member_can_store_multiple_addresses_with_unique_types(): void
+    {
+        $user = User::factory()->member()->create([
+            'email' => 'multi-address@example.com',
+        ]);
+
+        $types = AddressType::orderBy('name')->get();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('member.onboarding.store'), [
+                'first_name' => 'Multi',
+                'last_name' => 'Address',
+                'phone' => '12345678',
+                'date_of_birth' => '1995-01-01',
+                'addresses' => [
+                    [
+                        'address_type_id' => $types[0]->id,
+                        'line_1' => '123 Primary Street',
+                        'line_2' => '',
+                        'city' => 'Singapore',
+                        'state' => 'Central',
+                        'postal_code' => '123456',
+                        'country' => 'Singapore',
+                        'is_primary' => 1,
+                    ],
+                    [
+                        'address_type_id' => $types[1]->id,
+                        'line_1' => '99 Mailing Road',
+                        'line_2' => '',
+                        'city' => 'Johor Bahru',
+                        'state' => 'Johor',
+                        'postal_code' => '81110',
+                        'country' => 'Malaysia',
+                        'is_primary' => 0,
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect(route('member.dashboard'));
+
+        $user->refresh();
+
+        $this->assertCount(2, $user->member->addresses);
+        $this->assertSame(1, $user->member->addresses()->where('is_primary', true)->count());
+    }
+
+    public function test_member_saved_addresses_remain_visible_after_reload(): void
+    {
+        $user = User::factory()->member()->create([
+            'email' => 'reload-address@example.com',
+        ]);
+
+        $member = Member::factory()->completed()->create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'status' => 'approved',
+        ]);
+
+        $types = AddressType::orderBy('name')->get()->values();
+
+        $member->addresses()->createMany([
+            [
+                'address_type_id' => $types[0]->id,
+                'line_1' => '11 Jalan Pulai Perdana 3',
+                'line_2' => 'Taman Sri Pulai Perdana',
+                'city' => 'Johor Bahru',
+                'state' => 'Johor',
+                'postal_code' => '81110',
+                'country' => 'Malaysia',
+                'is_primary' => true,
+            ],
+            [
+                'address_type_id' => $types[1]->id,
+                'line_1' => '99 Mailing Road',
+                'line_2' => 'Suite 8',
+                'city' => 'Singapore',
+                'state' => 'Central',
+                'postal_code' => '048580',
+                'country' => 'Singapore',
+                'is_primary' => false,
+            ],
+        ]);
+
+        $response = $this->actingAs($user)->get(route('member.profile.edit'));
+
+        $response->assertOk();
+        $response->assertSee('11 Jalan Pulai Perdana 3');
+        $response->assertSee('99 Mailing Road');
+        $response->assertSee('Johor Bahru');
+        $response->assertSee('Singapore');
+    }
+
     public function test_deleting_member_archives_linked_login_account(): void
     {
         $admin = User::factory()->admin()->create();
@@ -194,5 +288,174 @@ class MemberManagementTest extends TestCase
             'id' => $member->id,
             'status' => 'approved',
         ]);
+    }
+
+    public function test_authenticated_user_can_update_member_profile_image(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'first_name' => 'Profile',
+            'last_name' => 'Image',
+            'status' => 'approved',
+        ]);
+
+        $address = $member->addresses()->create([
+            'address_type_id' => AddressType::first()->id,
+            'line_1' => '123 Update Street',
+            'line_2' => 'Unit 12',
+            'city' => 'Singapore',
+            'state' => 'Central',
+            'postal_code' => '123456',
+            'country' => 'Singapore',
+            'is_primary' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->put(route('members.update', $member), [
+                'first_name' => 'Profile',
+                'last_name' => 'Image',
+                'email' => $member->email,
+                'phone' => $member->phone,
+                'status' => 'approved',
+                'date_of_birth' => optional($member->date_of_birth)->toDateString(),
+                'addresses' => [[
+                    'id' => $address->id,
+                    'address_type_id' => $address->address_type_id,
+                    'line_1' => $address->line_1,
+                    'line_2' => $address->line_2,
+                    'city' => $address->city,
+                    'state' => $address->state,
+                    'postal_code' => $address->postal_code,
+                    'country' => $address->country,
+                    'is_primary' => 1,
+                ]],
+                'profile_image' => UploadedFile::fake()->image('cropped-avatar.png', 512, 512),
+            ]);
+
+        $response->assertRedirect(route('members.show', $member));
+
+        $member->refresh();
+
+        $this->assertNotNull($member->profileImage);
+        Storage::disk('public')->assertExists($member->profileImage->path);
+    }
+
+    public function test_saved_proof_of_address_persists_and_renders_on_member_edit_page(): void
+    {
+        $user = User::factory()->member()->create([
+            'email' => 'proof@example.com',
+        ]);
+
+        $member = Member::factory()->completed()->create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'status' => 'approved',
+        ]);
+
+        $address = $member->addresses()->create([
+            'address_type_id' => AddressType::first()->id,
+            'line_1' => '88 Archive Road',
+            'line_2' => 'Level 2',
+            'city' => 'Johor Bahru',
+            'state' => 'Johor',
+            'postal_code' => '81110',
+            'country' => 'Malaysia',
+            'is_primary' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('member.profile.update'), [
+                'first_name' => $member->first_name,
+                'last_name' => $member->last_name,
+                'phone' => $member->phone,
+                'date_of_birth' => optional($member->date_of_birth)->toDateString(),
+                'referral_code' => '',
+                'addresses' => [[
+                    'id' => $address->id,
+                    'address_type_id' => $address->address_type_id,
+                    'line_1' => $address->line_1,
+                    'line_2' => $address->line_2,
+                    'city' => $address->city,
+                    'state' => $address->state,
+                    'postal_code' => $address->postal_code,
+                    'country' => $address->country,
+                    'is_primary' => 1,
+                    'proof_of_address' => UploadedFile::fake()->image('proof-of-address.png'),
+                ]],
+            ]);
+
+        $response->assertRedirect(route('member.dashboard'));
+
+        $address->refresh();
+
+        $this->assertNotNull($address->proofDocument);
+        Storage::disk('public')->assertExists($address->proofDocument->path);
+
+        $editResponse = $this->actingAs($user)->get(route('member.profile.edit'));
+
+        $editResponse->assertOk();
+        $editResponse->assertSee('proof-of-address.png');
+        $editResponse->assertSee('Open file');
+    }
+
+    public function test_member_can_update_profile_image_from_profile_modal_endpoint(): void
+    {
+        $user = User::factory()->member()->create([
+            'email' => 'member-image@example.com',
+        ]);
+
+        $member = Member::factory()->completed()->create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'status' => 'approved',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('member.profile.image.update'), [
+                'profile_image' => UploadedFile::fake()->image('modal-cropped-avatar.png', 512, 512),
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonStructure([
+                'message',
+                'profile_image_url',
+                'profile_image_name',
+            ]);
+
+        $member->refresh();
+
+        $this->assertNotNull($member->profileImage);
+        Storage::disk('public')->assertExists($member->profileImage->path);
+    }
+
+    public function test_admin_can_update_member_profile_image_from_image_endpoint(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'status' => 'approved',
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->post(route('members.image.update', $member), [
+                'profile_image' => UploadedFile::fake()->image('admin-avatar.png', 512, 512),
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonStructure([
+                'message',
+                'profile_image_url',
+                'profile_image_name',
+            ]);
+
+        $member->refresh();
+
+        $this->assertNotNull($member->profileImage);
+        Storage::disk('public')->assertExists($member->profileImage->path);
     }
 }

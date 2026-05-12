@@ -86,6 +86,15 @@ class MemberService
         });
     }
 
+    public function updateProfileImage(Member $member, UploadedFile $file): Member
+    {
+        return DB::transaction(function () use ($member, $file) {
+            $this->storeProfileImage($member, $file);
+
+            return $member->fresh(['profileImage']);
+        });
+    }
+
     protected function memberPayload(array $data, ?Member $member = null, ?User $user = null): array
     {
         $payload = Arr::only($data, [

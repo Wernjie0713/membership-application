@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CompleteMemberProfileRequest;
+use App\Http\Requests\UpdateMemberProfileImageRequest;
 use App\Models\AddressType;
 use App\Models\Member;
 use App\Services\MemberService;
@@ -95,5 +96,19 @@ class MemberPortalController extends Controller
         return redirect()
             ->route('member.dashboard')
             ->with('status', 'Member profile updated successfully.');
+    }
+
+    public function updateProfileImage(UpdateMemberProfileImageRequest $request)
+    {
+        $member = $request->user()->member()->firstOrFail();
+        $member = $this->memberService->updateProfileImage($member, $request->file('profile_image'));
+
+        return response()->json([
+            'message' => 'Profile picture updated successfully.',
+            'profile_image_url' => $member->profileImage
+                ? asset('storage/'.$member->profileImage->path)
+                : asset('images/default-profile-picture.jpg'),
+            'profile_image_name' => $member->profileImage?->original_name,
+        ]);
     }
 }

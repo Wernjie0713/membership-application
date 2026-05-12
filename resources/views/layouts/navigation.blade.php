@@ -33,7 +33,7 @@
                     @endif
                     @if ($user->isMember())
                         <x-nav-link :href="$user->hasCompletedMemberProfile() ? route('member.profile.edit') : route('member.onboarding.create')" :active="request()->routeIs('member.*') && !request()->routeIs('member.dashboard')">
-                            {{ __('Member Portal') }}
+                            {{ __('Membership') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -56,7 +56,7 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            {{ __('Account Settings') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -108,7 +108,7 @@
             @endif
             @if ($user->isMember())
                 <x-responsive-nav-link :href="$user->hasCompletedMemberProfile() ? route('member.profile.edit') : route('member.onboarding.create')" :active="request()->routeIs('member.*') && !request()->routeIs('member.dashboard')">
-                    {{ __('Member Portal') }}
+                    {{ __('Membership') }}
                 </x-responsive-nav-link>
             @endif
         </div>
@@ -122,7 +122,7 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    {{ __('Account Settings') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->

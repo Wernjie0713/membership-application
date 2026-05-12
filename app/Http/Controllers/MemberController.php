@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\MembersExport;
+use App\Http\Requests\AdminUpdateMemberProfileImageRequest;
 use App\Http\Requests\StoreMemberRequest;
 use App\Http\Requests\UpdateMemberRequest;
 use App\Models\AddressType;
@@ -187,5 +188,18 @@ class MemberController extends Controller
         return redirect()
             ->route('members.index', $request->query())
             ->with('status', "Member status updated to {$validated['status']}.");
+    }
+
+    public function updateProfileImage(AdminUpdateMemberProfileImageRequest $request, Member $member)
+    {
+        $member = $this->memberService->updateProfileImage($member, $request->file('profile_image'));
+
+        return response()->json([
+            'message' => 'Profile picture updated successfully.',
+            'profile_image_url' => $member->profileImage
+                ? asset('storage/'.$member->profileImage->path)
+                : asset('images/default-profile-picture.jpg'),
+            'profile_image_name' => $member->profileImage?->original_name,
+        ]);
     }
 }

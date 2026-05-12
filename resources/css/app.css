@@ -32,4 +32,21 @@
     .field-checkbox {
         @apply h-5 w-5 rounded-[6px] border-[#cfcfcf] text-uber-black shadow-sm transition focus:ring-4 focus:ring-[#111111]/10;
     }
+
+    .field-combobox-panel {
+        @apply absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[18px] border border-[#d8d8d8] bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)];
+    }
+
+    .field-combobox-option {
+        @apply w-full rounded-[12px] px-3 py-2 text-left text-sm text-uber-black transition hover:bg-chip-gray;
+    }
+
+    .field-proof-card {
+        @apply mt-4 rounded-[18px] border border-[#e5e5e5] bg-[#fafafa] p-4;
+    }
+
+    .field-proof-thumb {
+        @apply h-36 w-full rounded-[14px] object-cover;
+    }
+
 }
