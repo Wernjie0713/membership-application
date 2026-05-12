@@ -18,8 +18,9 @@
                 @method('PUT')
                 @include('members._form', [
                     'submitLabel' => 'Update Member',
-                    'showPasswordFields' => true,
-                    'passwordRequired' => false,
+                    'showPasswordFields' => false,
+                    'showUsernameField' => false,
+                    'showProfileImageEditor' => false,
                     'showEmailField' => true,
                     'readonlyEmail' => false,
                     'showStatusField' => true,

@@ -4,12 +4,27 @@
     $showEmailField = $showEmailField ?? true;
     $readonlyEmail = $readonlyEmail ?? false;
     $showStatusField = $showStatusField ?? true;
+    $showUsernameField = $showUsernameField ?? $showPasswordFields;
+    $showProfileImageEditor = $showProfileImageEditor ?? true;
     $defaultProfileImageUrl = asset('images/default-profile-picture.jpg');
     $initialProfileImageUrl = $member->profileImage ? Storage::url($member->profileImage->path) : $defaultProfileImageUrl;
     $initialProfileImageName = $member->profileImage?->original_name;
     $countries = config('countries', []);
     $fallbackName = $member->full_name ?: 'New member';
     $fallbackEmail = $member->email ?: 'Add an email address';
+    $rawPhone = old('phone', $member->phone);
+    $initialPhoneCountryCode = old('phone_country_code');
+    $initialPhoneNumber = old('phone_number');
+
+    if ($initialPhoneCountryCode === null && $initialPhoneNumber === null && filled($rawPhone)) {
+        if (preg_match('/^(\+\d{1,4})\s*(\d{6,15})$/', $rawPhone, $matches)) {
+            $initialPhoneCountryCode = $matches[1];
+            $initialPhoneNumber = $matches[2];
+        } else {
+            $initialPhoneNumber = preg_replace('/\D+/', '', $rawPhone);
+        }
+    }
+
     $memberAddresses = old('addresses', isset($member) && $member->addresses->count()
         ? $member->addresses->map(function ($address) {
             return [
@@ -73,45 +88,51 @@
                     <div class="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
                         <img :src="profileImageUrl" alt="Profile picture preview" class="h-full w-full object-cover">
                     </div>
-                    <button
-                        type="button"
-                        @click="triggerProfileImagePicker()"
-                        :disabled="profileImageUploading"
-                        class="absolute bottom-1 right-0 inline-flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-uber-black text-white shadow-uber-float transition hover:bg-uber-black/90 focus:outline-none focus:ring-4 focus:ring-uber-black/10"
-                        aria-label="Edit profile picture"
-                    >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z" />
-                        </svg>
-                    </button>
+                    @if ($showProfileImageEditor)
+                        <button
+                            type="button"
+                            @click="triggerProfileImagePicker()"
+                            :disabled="profileImageUploading"
+                            class="absolute bottom-1 right-0 inline-flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-uber-black text-white shadow-uber-float transition hover:bg-uber-black/90 focus:outline-none focus:ring-4 focus:ring-uber-black/10"
+                            aria-label="Edit profile picture"
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 20h9" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z" />
+                            </svg>
+                        </button>
+                    @endif
                 </div>
 
-                <input
-                    x-ref="profileImageInput"
-                    id="profile_image"
-                    name="profile_image"
-                    type="file"
-                    class="hidden"
-                    accept="image/jpeg,image/png,image/webp"
-                    @change="handleProfileImageSelection"
-                />
+                @if ($showProfileImageEditor)
+                    <input
+                        x-ref="profileImageInput"
+                        id="profile_image"
+                        name="profile_image"
+                        type="file"
+                        class="hidden"
+                        accept="image/jpeg,image/png,image/webp"
+                        @change="handleProfileImageSelection"
+                    />
+                @endif
 
                 <p class="mt-5 text-[22px] font-semibold tracking-tight text-uber-black" x-text="displayName"></p>
                 <p class="mt-2 text-sm text-body-gray" x-text="displayEmail"></p>
                 <p class="mt-8 max-w-[18rem] text-sm leading-7 text-body-gray">
                     JPEG, PNG, or WebP only. Maximum upload size is 5 MB.
                 </p>
-                <template x-if="profileImageUploading">
-                    <p class="mt-4 text-sm font-medium text-uber-black">Uploading profile picture...</p>
-                </template>
-                <template x-if="profileImageClientError">
-                    <p class="mt-4 text-sm font-medium text-uber-black" x-text="profileImageClientError"></p>
-                </template>
-                <x-input-error class="mt-4" :messages="$errors->get('profile_image')" />
-                <template x-if="profileImageName">
-                    <p class="mt-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-gray" x-text="profileImageName"></p>
-                </template>
+                @if ($showProfileImageEditor)
+                    <template x-if="profileImageUploading">
+                        <p class="mt-4 text-sm font-medium text-uber-black">Uploading profile picture...</p>
+                    </template>
+                    <template x-if="profileImageClientError">
+                        <p class="mt-4 text-sm font-medium text-uber-black" x-text="profileImageClientError"></p>
+                    </template>
+                    <x-input-error class="mt-4" :messages="$errors->get('profile_image')" />
+                    <template x-if="profileImageName">
+                        <p class="mt-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-gray" x-text="profileImageName"></p>
+                    </template>
+                @endif
             </div>
         </div>
     </div>
@@ -121,12 +142,14 @@
         <div class="h-full rounded-[8px] bg-white p-8 shadow-uber-card">
             <h3 class="text-xl font-bold text-uber-black mb-6">Profile Identity</h3>
             <div class="grid gap-6 md:grid-cols-2">
-                @if ($showPasswordFields)
+                @if ($showPasswordFields && $showUsernameField)
                     <div>
                         <x-input-label for="username" value="Username" />
                         <x-text-input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $member->user?->username)" required />
                         <x-input-error class="mt-2" :messages="$errors->get('username')" />
                     </div>
+                @endif
+                @if ($showPasswordFields)
                     <div>
                         <x-input-label for="password" value="Login Password" />
                         <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" :required="$passwordRequired" />
@@ -137,7 +160,7 @@
                         <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" :required="$passwordRequired" />
                     </div>
                 @endif
-                @if (! $showPasswordFields)
+                @if (! $showPasswordFields && $showUsernameField)
                     <div>
                         <x-input-label for="username" value="Username" />
                         <x-text-input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $member->user?->username)" required />
@@ -166,7 +189,34 @@
                 @endif
                 <div>
                     <x-input-label for="phone" value="Phone" />
-                    <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $member->phone)" />
+                    <div class="mt-1 grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
+                        <div>
+                            <x-text-input
+                                id="phone_country_code"
+                                name="phone_country_code"
+                                type="text"
+                                class="block w-full"
+                                :value="$initialPhoneCountryCode"
+                                placeholder="+60"
+                                inputmode="tel"
+                            />
+                            <x-input-error class="mt-2" :messages="$errors->get('phone_country_code')" />
+                        </div>
+                        <div>
+                            <x-text-input
+                                id="phone_number"
+                                name="phone_number"
+                                type="text"
+                                class="block w-full"
+                                :value="$initialPhoneNumber"
+                                placeholder="1135752400"
+                                inputmode="numeric"
+                                pattern="[0-9]{6,15}"
+                            />
+                            <x-input-error class="mt-2" :messages="$errors->get('phone_number')" />
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs font-medium text-body-gray uppercase tracking-wide">Enter country code like +60 and the remaining phone number using digits only.</p>
                     <x-input-error class="mt-2" :messages="$errors->get('phone')" />
                 </div>
                 <div>

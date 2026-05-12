@@ -38,9 +38,21 @@
                             <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Referrer</dt>
                             <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->referrer?->full_name ?: '-' }}</dd>
                         </div>
-                        <div>
+                        <div class="md:col-span-2">
                             <dt class="text-sm font-medium text-body-gray uppercase tracking-wide">Profile Image</dt>
-                            <dd class="mt-2 text-base font-medium text-uber-black">{{ $member->profileImage?->original_name ?: 'Not uploaded' }}</dd>
+                            <dd class="mt-4 flex items-center gap-5">
+                                <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+                                    <img
+                                        src="{{ $member->profileImage ? Storage::url($member->profileImage->path) : asset('images/default-profile-picture.jpg') }}"
+                                        alt="{{ $member->full_name }} profile picture"
+                                        class="h-full w-full object-cover"
+                                    >
+                                </div>
+                                <div>
+                                    <p class="text-base font-medium text-uber-black">{{ $member->profileImage?->original_name ?: 'Default profile picture' }}</p>
+                                    <p class="mt-1 text-sm text-body-gray">{{ $member->profileImage ? 'Uploaded member profile image' : 'No uploaded profile image available.' }}</p>
+                                </div>
+                            </dd>
                         </div>
                     </dl>
                 </div>

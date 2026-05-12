@@ -185,10 +185,11 @@ class MemberService
             'first_name',
             'last_name',
             'email',
-            'phone',
             'status',
             'date_of_birth',
         ]);
+
+        $payload['phone'] = $this->combinePhoneParts($data);
 
         if ($user) {
             $payload['user_id'] = $user->id;
@@ -350,5 +351,17 @@ class MemberService
         } while (Member::withTrashed()->where('email', $email)->exists());
 
         return $email;
+    }
+
+    protected function combinePhoneParts(array $data): ?string
+    {
+        $countryCode = trim((string) ($data['phone_country_code'] ?? ''));
+        $phoneNumber = trim((string) ($data['phone_number'] ?? ''));
+
+        if ($countryCode === '' || $phoneNumber === '') {
+            return null;
+        }
+
+        return $countryCode.' '.$phoneNumber;
     }
 }

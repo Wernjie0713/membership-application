@@ -27,7 +27,8 @@ class CompleteMemberProfileRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone_country_code' => ['nullable', 'regex:/^\+\d{1,4}$/'],
+            'phone_number' => ['nullable', 'regex:/^\d{6,15}$/'],
             'date_of_birth' => ['nullable', 'date'],
             'referral_code' => [
                 'nullable',
@@ -59,10 +60,21 @@ class CompleteMemberProfileRequest extends FormRequest
     {
         return [
             function ($validator) {
+                $this->validatePhoneParts($validator);
                 $this->validatePrimaryAddress($validator);
                 $this->validateUniqueAddressTypes($validator);
             },
         ];
+    }
+
+    protected function validatePhoneParts($validator): void
+    {
+        $countryCode = $this->input('phone_country_code');
+        $phoneNumber = $this->input('phone_number');
+
+        if (($countryCode && ! $phoneNumber) || (! $countryCode && $phoneNumber)) {
+            $validator->errors()->add('phone', 'Both country code and phone number are required when entering a phone number.');
+        }
     }
 
     protected function validatePrimaryAddress($validator): void

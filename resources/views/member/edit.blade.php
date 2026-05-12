@@ -13,6 +13,7 @@
                 @include('members._form', [
                     'submitLabel' => 'Save Profile',
                     'showPasswordFields' => false,
+                    'showUsernameField' => false,
                     'showEmailField' => true,
                     'readonlyEmail' => true,
                     'showStatusField' => false,

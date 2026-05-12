@@ -29,7 +29,8 @@ class StoreMemberRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:members,email', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'string', 'min:8'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone_country_code' => ['nullable', 'regex:/^\+\d{1,4}$/'],
+            'phone_number' => ['nullable', 'regex:/^\d{6,15}$/'],
             'status' => ['required', Rule::in(Member::STATUSES)],
             'date_of_birth' => ['nullable', 'date'],
             'referral_code' => ['nullable', 'string', Rule::exists('members', 'referral_code')->where(fn ($query) => $query->whereNotNull('user_id'))],
@@ -51,10 +52,21 @@ class StoreMemberRequest extends FormRequest
     {
         return [
             function ($validator) {
+                $this->validatePhoneParts($validator);
                 $this->validatePrimaryAddress($validator);
                 $this->validateUniqueAddressTypes($validator);
             },
         ];
+    }
+
+    protected function validatePhoneParts($validator): void
+    {
+        $countryCode = $this->input('phone_country_code');
+        $phoneNumber = $this->input('phone_number');
+
+        if (($countryCode && ! $phoneNumber) || (! $countryCode && $phoneNumber)) {
+            $validator->errors()->add('phone', 'Both country code and phone number are required when entering a phone number.');
+        }
     }
 
     protected function validatePrimaryAddress($validator): void

@@ -38,7 +38,8 @@ class MemberManagementTest extends TestCase
                 'email' => 'john@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
-                'phone' => '12345678',
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
                 'status' => Member::STATUS_ACTIVE,
                 'referral_code' => $referrer->referral_code,
                 'addresses' => [[
@@ -110,7 +111,8 @@ class MemberManagementTest extends TestCase
             ->post(route('member.onboarding.store'), [
                 'first_name' => 'Member',
                 'last_name' => 'User',
-                'phone' => '12345678',
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
                 'date_of_birth' => '1995-01-01',
                 'referral_code' => $referrer->referral_code,
                 'addresses' => [[
@@ -148,7 +150,8 @@ class MemberManagementTest extends TestCase
             ->post(route('member.onboarding.store'), [
                 'first_name' => 'Multi',
                 'last_name' => 'Address',
-                'phone' => '12345678',
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
                 'date_of_birth' => '1995-01-01',
                 'addresses' => [
                     [
@@ -375,7 +378,8 @@ class MemberManagementTest extends TestCase
                 'first_name' => 'Profile',
                 'last_name' => 'Image',
                 'email' => $member->email,
-                'phone' => $member->phone,
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
                 'status' => Member::STATUS_ACTIVE,
                 'date_of_birth' => optional($member->date_of_birth)->toDateString(),
                 'addresses' => [[
@@ -428,7 +432,8 @@ class MemberManagementTest extends TestCase
             ->patch(route('member.profile.update'), [
                 'first_name' => $member->first_name,
                 'last_name' => $member->last_name,
-                'phone' => $member->phone,
+                'phone_country_code' => '+60',
+                'phone_number' => '1135752400',
                 'date_of_birth' => optional($member->date_of_birth)->toDateString(),
                 'referral_code' => '',
                 'addresses' => [[

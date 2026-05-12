@@ -44,7 +44,8 @@ class UpdateMemberRequest extends FormRequest
                 Rule::unique(User::class, 'email')->ignore($member->user_id),
             ],
             'password' => ['nullable', 'confirmed', 'string', 'min:8'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone_country_code' => ['nullable', 'regex:/^\+\d{1,4}$/'],
+            'phone_number' => ['nullable', 'regex:/^\d{6,15}$/'],
             'status' => ['required', Rule::in(Member::STATUSES)],
             'date_of_birth' => ['nullable', 'date'],
             'referral_code' => [
@@ -71,10 +72,21 @@ class UpdateMemberRequest extends FormRequest
     {
         return [
             function ($validator) {
+                $this->validatePhoneParts($validator);
                 $this->validatePrimaryAddress($validator);
                 $this->validateUniqueAddressTypes($validator);
             },
         ];
+    }
+
+    protected function validatePhoneParts($validator): void
+    {
+        $countryCode = $this->input('phone_country_code');
+        $phoneNumber = $this->input('phone_number');
+
+        if (($countryCode && ! $phoneNumber) || (! $countryCode && $phoneNumber)) {
+            $validator->errors()->add('phone', 'Both country code and phone number are required when entering a phone number.');
+        }
     }
 
     protected function validatePrimaryAddress($validator): void

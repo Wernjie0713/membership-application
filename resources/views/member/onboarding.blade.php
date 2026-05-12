@@ -14,6 +14,7 @@
                 @include('members._form', [
                     'submitLabel' => 'Complete Profile',
                     'showPasswordFields' => false,
+                    'showUsernameField' => false,
                     'showEmailField' => true,
                     'readonlyEmail' => true,
                     'showStatusField' => false,
