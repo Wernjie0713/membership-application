@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -31,17 +32,24 @@ class MemberController extends Controller
      */
     public function index(Request $request): View
     {
-        $filters = $request->only(['search', 'status']);
+        $filters = $request->only(['search', 'status', 'sort']);
+        $allowedPerPage = [10, 20, 50, 100];
+        $perPage = (int) $request->integer('per_page', 10);
+
+        if (! in_array($perPage, $allowedPerPage, true)) {
+            $perPage = 10;
+        }
 
         $members = $this->memberQueryService
             ->applyFilters($this->memberQueryService->baseQuery(), $filters)
-            ->latest()
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('members.index', [
             'members' => $members,
             'filters' => $filters,
+            'perPage' => $perPage,
+            'perPageOptions' => $allowedPerPage,
         ]);
     }
 
@@ -158,11 +166,26 @@ class MemberController extends Controller
 
     public function export(Request $request)
     {
-        $filters = $request->only(['search', 'status']);
+        $filters = $request->only(['search', 'status', 'sort']);
 
         return Excel::download(
             new MembersExport($filters, $this->memberQueryService),
             'members-report.xlsx'
         );
+    }
+
+    public function updateStatus(Request $request, Member $member): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'terminated'])],
+        ]);
+
+        $member->update([
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()
+            ->route('members.index', $request->query())
+            ->with('status', "Member status updated to {$validated['status']}.");
     }
 }

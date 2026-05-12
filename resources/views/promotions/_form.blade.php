@@ -9,7 +9,7 @@
     </div>
     <div>
         <x-input-label for="status" value="Status" />
-        <select id="status" name="status" class="mt-1 block w-full rounded-lg border-chip-gray text-uber-black shadow-sm focus:border-uber-black focus:ring-uber-black">
+        <select id="status" name="status" class="field-select mt-1 block w-full">
             @foreach (['draft', 'active', 'inactive'] as $status)
                 <option value="{{ $status }}" @selected(old('status', $promotion->status) === $status)>{{ ucfirst($status) }}</option>
             @endforeach
@@ -25,7 +25,7 @@
     </div>
     <div class="md:col-span-2">
         <x-input-label for="description" value="Description" />
-        <textarea id="description" name="description" rows="4" class="mt-1 block w-full rounded-lg border-chip-gray text-uber-black shadow-sm focus:border-uber-black focus:ring-uber-black">{{ old('description', $promotion->description) }}</textarea>
+        <textarea id="description" name="description" rows="4" class="field-textarea mt-1 block w-full">{{ old('description', $promotion->description) }}</textarea>
     </div>
 </div>
 
@@ -55,7 +55,7 @@
                     <x-text-input :id="'tier_'.$index.'_step'" :name="'tiers['.$index.'][step_increment]'" type="number" min="1" class="mt-1 block w-full" :value="$tier['step_increment']" />
                     <label class="mt-3 inline-flex items-center gap-3 text-sm font-medium text-uber-black">
                         <input type="hidden" name="tiers[{{ $index }}][is_recurring]" value="0">
-                        <input type="checkbox" name="tiers[{{ $index }}][is_recurring]" value="1" class="h-5 w-5 rounded border-chip-gray text-uber-black shadow-sm focus:ring-uber-black" @checked($tier['is_recurring'])>
+                        <input type="checkbox" name="tiers[{{ $index }}][is_recurring]" value="1" class="field-checkbox" @checked($tier['is_recurring'])>
                         Recurring
                     </label>
                 </div>

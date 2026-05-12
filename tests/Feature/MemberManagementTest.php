@@ -155,4 +155,44 @@ class MemberManagementTest extends TestCase
         $this->assertStringStartsWith('deleted+member-'.$member->id.'-', $user->email);
         $this->assertStringEndsWith('@archived.local', $user->email);
     }
+
+    public function test_admin_can_sort_members_from_list_view(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Member::factory()->completed()->create([
+            'first_name' => 'Zara',
+            'last_name' => 'Tan',
+            'status' => 'approved',
+        ]);
+
+        Member::factory()->completed()->create([
+            'first_name' => 'Aaron',
+            'last_name' => 'Lee',
+            'status' => 'approved',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('members.index', ['sort' => 'name_asc']));
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Aaron Lee', 'Zara Tan']);
+    }
+
+    public function test_admin_can_change_member_status_from_list_action(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('members.status.update', ['member' => $member, 'sort' => 'latest']), [
+            'status' => 'approved',
+        ]);
+
+        $response->assertRedirect(route('members.index', ['sort' => 'latest']));
+        $this->assertDatabaseHas('members', [
+            'id' => $member->id,
+            'status' => 'approved',
+        ]);
+    }
 }

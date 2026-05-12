@@ -5,19 +5,37 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePromotionRequest;
 use App\Http\Requests\UpdatePromotionRequest;
 use App\Models\Promotion;
+use App\Services\PromotionQueryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PromotionController extends Controller
 {
+    public function __construct(protected PromotionQueryService $promotionQueryService)
+    {
+    }
+
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        $filters = $request->only(['search', 'status', 'sort']);
+        $perPageOptions = [10, 20, 50, 100];
+        $perPage = (int) $request->integer('per_page', 10);
+        $perPage = in_array($perPage, $perPageOptions, true) ? $perPage : 10;
+
+        $promotions = $this->promotionQueryService
+            ->applyFilters($this->promotionQueryService->baseQuery(), $filters)
+            ->paginate($perPage)
+            ->withQueryString();
+
         return view('promotions.index', [
-            'promotions' => Promotion::withCount(['rewardTiers', 'rewardAchievers'])->latest()->paginate(10),
+            'promotions' => $promotions,
+            'filters' => $filters,
+            'perPage' => $perPage,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
@@ -110,6 +128,21 @@ class PromotionController extends Controller
         return redirect()
             ->route('promotions.index')
             ->with('status', 'Promotion deleted successfully.');
+    }
+
+    public function updateStatus(Request $request, Promotion $promotion): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:draft,active,inactive'],
+        ]);
+
+        $promotion->update([
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()
+            ->route('promotions.index', $request->query())
+            ->with('status', 'Promotion status updated successfully.');
     }
 
     protected function defaultTiers(): array

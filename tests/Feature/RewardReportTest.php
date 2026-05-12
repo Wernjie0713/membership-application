@@ -116,4 +116,137 @@ class RewardReportTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    public function test_reward_report_can_filter_by_promotion(): void
+    {
+        $user = User::factory()->admin()->create();
+
+        $member = Member::factory()->completed()->create([
+            'first_name' => 'Chris',
+            'last_name' => 'Ng',
+            'status' => 'approved',
+        ]);
+
+        $primaryPromotion = Promotion::create([
+            'name' => 'Primary Promotion',
+            'status' => 'active',
+            'start_date' => now()->subMonth(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $secondaryPromotion = Promotion::create([
+            'name' => 'Secondary Promotion',
+            'status' => 'active',
+            'start_date' => now()->subMonth(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $primaryTier = $primaryPromotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $secondaryTier = $secondaryPromotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 5,
+            'reward_amount' => 50,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $member->rewardAchievers()->create([
+            'promotion_id' => $primaryPromotion->id,
+            'promotion_reward_tier_id' => $primaryTier->id,
+            'threshold_reached' => 10,
+            'referral_count' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'earned_at' => now()->subDay(),
+        ]);
+
+        $member->rewardAchievers()->create([
+            'promotion_id' => $secondaryPromotion->id,
+            'promotion_reward_tier_id' => $secondaryTier->id,
+            'threshold_reached' => 5,
+            'referral_count' => 5,
+            'reward_amount' => 50,
+            'currency' => 'USD',
+            'earned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('rewards.index', [
+            'promotion_id' => $primaryPromotion->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Primary Promotion');
+        $response->assertSee('USD 100.00');
+        $response->assertDontSee('USD 50.00');
+    }
+
+    public function test_reward_report_can_search_by_member_name(): void
+    {
+        $user = User::factory()->admin()->create();
+
+        $promotion = Promotion::create([
+            'name' => 'Searchable Campaign',
+            'status' => 'active',
+            'start_date' => now()->subMonth(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $tier = $promotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $matchingMember = Member::factory()->completed()->create([
+            'first_name' => 'Nadia',
+            'last_name' => 'Tan',
+            'status' => 'approved',
+        ]);
+
+        $otherMember = Member::factory()->completed()->create([
+            'first_name' => 'Oscar',
+            'last_name' => 'Lim',
+            'status' => 'approved',
+        ]);
+
+        $matchingMember->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 10,
+            'referral_count' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'earned_at' => now()->subDay(),
+        ]);
+
+        $otherMember->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 12,
+            'referral_count' => 12,
+            'reward_amount' => 120,
+            'currency' => 'USD',
+            'earned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('rewards.index', [
+            'search' => 'Nadia',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Nadia Tan');
+        $response->assertDontSee('USD 120.00');
+    }
 }

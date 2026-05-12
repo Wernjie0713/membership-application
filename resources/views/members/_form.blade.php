@@ -44,7 +44,7 @@
                         <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7-7z"></path></svg>
                     </div>
                 @endif
-                <input id="profile_image" name="profile_image" type="file" class="block w-full cursor-pointer text-sm text-body-gray file:mr-4 file:rounded-full file:border-0 file:bg-chip-gray file:px-4 file:py-2 file:text-sm file:font-semibold file:text-uber-black hover:file:bg-hover-gray" />
+                <input id="profile_image" name="profile_image" type="file" class="field-file mt-4 block w-full" />
                 <x-input-error class="mt-2" :messages="$errors->get('profile_image')" />
                 @if ($member->profileImage)
                     <p class="mt-2 text-xs font-medium text-body-gray uppercase tracking-wide">Current file: {{ $member->profileImage->original_name }}</p>
@@ -102,7 +102,7 @@
                 @if ($showStatusField)
                     <div>
                         <x-input-label for="status" value="Status" />
-                        <select id="status" name="status" class="mt-1 block w-full rounded-lg border-chip-gray text-uber-black shadow-sm focus:border-uber-black focus:ring-uber-black">
+                        <select id="status" name="status" class="field-select mt-1 block w-full">
                             @foreach (['pending', 'approved', 'rejected', 'terminated'] as $status)
                                 <option value="{{ $status }}" @selected(old('status', $member->status) === $status)>{{ ucfirst($status) }}</option>
                             @endforeach
@@ -131,7 +131,7 @@
                         <div class="grid gap-6 md:grid-cols-2">
                             <div>
                                 <x-input-label :for="'addresses_'.$index.'_type'" value="Address Type" />
-                                <select id="addresses_{{ $index }}_type" name="addresses[{{ $index }}][address_type_id]" class="mt-1 block w-full rounded-lg border-chip-gray text-uber-black shadow-sm focus:border-uber-black focus:ring-uber-black">
+                                <select id="addresses_{{ $index }}_type" name="addresses[{{ $index }}][address_type_id]" class="field-select mt-1 block w-full">
                                     @foreach ($addressTypes as $type)
                                         <option value="{{ $type->id }}" @selected((string) ($address['address_type_id'] ?? '') === (string) $type->id)>{{ $type->name }}</option>
                                     @endforeach
@@ -140,7 +140,7 @@
                             <div class="flex items-end">
                                 <label class="inline-flex items-center gap-3 text-sm font-medium text-uber-black">
                                     <input type="hidden" name="addresses[{{ $index }}][is_primary]" value="0">
-                                    <input type="checkbox" name="addresses[{{ $index }}][is_primary]" value="1" class="h-5 w-5 rounded border-chip-gray text-uber-black shadow-sm focus:ring-uber-black" @checked($address['is_primary'] ?? false)>
+                                    <input type="checkbox" name="addresses[{{ $index }}][is_primary]" value="1" class="field-checkbox" @checked($address['is_primary'] ?? false)>
                                     Primary address
                                 </label>
                             </div>
@@ -170,7 +170,7 @@
                             </div>
                             <div class="md:col-span-2">
                                 <x-input-label :for="'addresses_'.$index.'_proof'" value="Proof of Address" />
-                                <input id="addresses_{{ $index }}_proof" name="addresses[{{ $index }}][proof_of_address]" type="file" class="mt-1 block w-full rounded-lg border border-chip-gray px-4 py-3 text-sm text-uber-black focus:border-uber-black focus:ring-uber-black" />
+                                <input id="addresses_{{ $index }}_proof" name="addresses[{{ $index }}][proof_of_address]" type="file" class="field-file mt-1 block w-full" />
                             </div>
                         </div>
                     </div>

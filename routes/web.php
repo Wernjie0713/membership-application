@@ -34,10 +34,12 @@ Route::middleware(['auth', 'verified', 'can:view-admin-dashboard'])->group(funct
 
 Route::middleware(['auth', 'verified', 'can:manage-members'])->group(function () {
     Route::get('/members-export', [MemberController::class, 'export'])->name('members.export');
+    Route::patch('/members/{member}/status', [MemberController::class, 'updateStatus'])->name('members.status.update');
     Route::resource('members', MemberController::class);
 });
 
 Route::middleware(['auth', 'verified', 'can:manage-promotions'])->group(function () {
+    Route::patch('/promotions/{promotion}/status', [PromotionController::class, 'updateStatus'])->name('promotions.status.update');
     Route::resource('promotions', PromotionController::class);
 });
 

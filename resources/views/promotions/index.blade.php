@@ -1,6 +1,36 @@
 <x-app-layout>
+    @php
+        $hasActiveFilters = filled($filters['search'] ?? null)
+            || filled($filters['status'] ?? null)
+            || (($filters['sort'] ?? 'latest') !== 'latest')
+            || (($perPage ?? 10) !== 10);
+
+        $statusStyles = [
+            'active' => [
+                'dot' => 'bg-emerald-500',
+            ],
+            'draft' => [
+                'dot' => 'bg-amber-500',
+            ],
+            'inactive' => [
+                'dot' => 'bg-slate-500',
+            ],
+        ];
+
+        $sortOptions = [
+            'latest' => 'Newest first',
+            'oldest' => 'Oldest first',
+            'name_asc' => 'Name A-Z',
+            'name_desc' => 'Name Z-A',
+            'status_asc' => 'Status',
+            'start_date_asc' => 'Start date',
+            'end_date_desc' => 'End date',
+            'rewards_desc' => 'Most rewards',
+        ];
+    @endphp
+
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4">
             <h2 class="font-bold text-[32px] text-uber-black leading-tight">Promotions</h2>
             <a href="{{ route('promotions.create') }}" class="rounded-full bg-uber-black px-4 py-2 text-sm font-medium text-white hover:bg-uber-black/90 transition">New Promotion</a>
         </div>
@@ -10,8 +40,48 @@
         <div class="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
             <x-flash-message />
 
-            <div class="overflow-hidden rounded-[8px] bg-white shadow-uber-card">
-                <div class="overflow-x-auto">
+            <div class="rounded-[8px] bg-white p-6 shadow-uber-card">
+                <form method="GET" action="{{ route('promotions.index') }}" class="grid gap-6 lg:grid-cols-[1.4fr_0.8fr_0.8fr_auto]">
+                    <div class="lg:col-span-1">
+                        <x-input-label for="search" value="Search" />
+                        <x-text-input id="search" name="search" type="text" class="mt-2 block w-full" :value="$filters['search'] ?? ''" placeholder="Promotion name or description" />
+                    </div>
+                    <div>
+                        <x-input-label for="status" value="Status" />
+                        <select id="status" name="status" class="field-select mt-2 block w-full">
+                            <option value="">All statuses</option>
+                            @foreach (['draft', 'active', 'inactive'] as $status)
+                                <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <x-input-label for="sort" value="Sort By" />
+                        <select id="sort" name="sort" class="field-select mt-2 block w-full">
+                            @foreach ($sortOptions as $value => $label)
+                                <option value="{{ $value }}" @selected(($filters['sort'] ?? 'latest') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 lg:justify-end">
+                        <x-primary-button class="min-w-[126px] justify-center">Apply Filters</x-primary-button>
+                        <a
+                            href="{{ $hasActiveFilters ? route('promotions.index') : '#' }}"
+                            @class([
+                                'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition',
+                                'border border-chip-gray bg-white text-uber-black hover:bg-chip-gray' => $hasActiveFilters,
+                                'cursor-not-allowed border border-chip-gray bg-chip-gray text-muted-gray pointer-events-none' => ! $hasActiveFilters,
+                            ])
+                            aria-disabled="{{ $hasActiveFilters ? 'false' : 'true' }}"
+                        >
+                            Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="rounded-[8px] bg-white shadow-uber-card">
+                <div class="overflow-x-auto lg:overflow-visible">
                     <table class="min-w-full divide-y divide-chip-gray text-sm">
                         <thead class="bg-chip-gray">
                             <tr>
@@ -20,23 +90,58 @@
                                 <th class="px-6 py-4 text-left font-semibold text-uber-black uppercase tracking-wide text-xs">Period</th>
                                 <th class="px-6 py-4 text-left font-semibold text-uber-black uppercase tracking-wide text-xs">Tiers</th>
                                 <th class="px-6 py-4 text-left font-semibold text-uber-black uppercase tracking-wide text-xs">Rewards</th>
-                                <th class="px-6 py-4 text-left font-semibold text-uber-black uppercase tracking-wide text-xs">Actions</th>
+                                <th class="px-6 py-4 text-right font-semibold text-uber-black uppercase tracking-wide text-xs">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-chip-gray bg-white">
                             @forelse ($promotions as $promotion)
+                                @php($statusStyle = $statusStyles[$promotion->status] ?? $statusStyles['inactive'])
                                 <tr>
                                     <td class="px-6 py-4 font-medium text-uber-black">{{ $promotion->name }}</td>
                                     <td class="px-6 py-4 text-body-gray">
-                                        <span class="rounded-full bg-chip-gray px-3 py-1 text-xs font-semibold uppercase text-uber-black">{{ $promotion->status }}</span>
+                                        <span class="inline-flex items-center gap-2 text-sm font-medium text-uber-black">
+                                            <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ $statusStyle['dot'] }}"></span>
+                                            {{ ucfirst($promotion->status) }}
+                                        </span>
                                     </td>
-                                    <td class="px-6 py-4 text-body-gray">{{ $promotion->start_date->toDateString() }} to {{ $promotion->end_date->toDateString() }}</td>
+                                    <td class="px-6 py-4 text-body-gray">{{ $promotion->start_date->format('d/m/Y') }} - {{ $promotion->end_date->format('d/m/Y') }}</td>
                                     <td class="px-6 py-4 text-body-gray">{{ $promotion->reward_tiers_count }}</td>
                                     <td class="px-6 py-4 text-body-gray">{{ $promotion->reward_achievers_count }}</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-4">
-                                            <a href="{{ route('promotions.show', $promotion) }}" class="text-sm font-medium text-uber-black hover:opacity-70 transition">View</a>
-                                            <a href="{{ route('promotions.edit', $promotion) }}" class="text-sm font-medium text-uber-black hover:opacity-70 transition">Edit</a>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end">
+                                            <x-dropdown align="right" width="48" contentClasses="rounded-[12px] bg-white p-2">
+                                                <x-slot name="trigger">
+                                                    <button type="button" class="inline-flex items-center gap-2 rounded-full border border-chip-gray bg-white px-4 py-2 text-sm font-medium text-uber-black transition hover:bg-chip-gray">
+                                                        Actions
+                                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                                            <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg>
+                                                    </button>
+                                                </x-slot>
+
+                                                <x-slot name="content">
+                                                    <div class="space-y-1">
+                                                        <x-dropdown-link :href="route('promotions.show', $promotion)">View</x-dropdown-link>
+                                                        <x-dropdown-link :href="route('promotions.edit', $promotion)">Edit</x-dropdown-link>
+
+                                                        <div class="my-2 border-t border-chip-gray"></div>
+
+                                                        @foreach (['draft', 'active', 'inactive'] as $status)
+                                                            @continue($status === $promotion->status)
+
+                                                            <form method="POST" action="{{ route('promotions.status.update', ['promotion' => $promotion] + request()->query()) }}">
+                                                                @csrf
+                                                                @method('PATCH')
+                                                                <input type="hidden" name="status" value="{{ $status }}">
+                                                                <button type="submit" class="flex w-full items-start gap-3 rounded-[8px] px-4 py-2.5 text-left text-sm font-medium text-uber-black transition hover:bg-chip-gray">
+                                                                    <span class="mt-[0.35rem] h-3 w-3 shrink-0 rounded-full {{ $statusStyles[$status]['dot'] }}"></span>
+                                                                    <span class="leading-6">Change to {{ ucfirst($status) }}</span>
+                                                                </button>
+                                                            </form>
+                                                        @endforeach
+                                                    </div>
+                                                </x-slot>
+                                            </x-dropdown>
                                         </div>
                                     </td>
                                 </tr>
@@ -50,7 +155,29 @@
                 </div>
             </div>
 
-            {{ $promotions->links() }}
+            <div class="flex flex-col gap-4 pt-2 lg:flex-row lg:items-center lg:justify-between">
+                <form method="GET" action="{{ route('promotions.index') }}" class="flex flex-wrap items-center gap-3 lg:flex-nowrap">
+                    <input type="hidden" name="search" value="{{ $filters['search'] ?? '' }}">
+                    <input type="hidden" name="status" value="{{ $filters['status'] ?? '' }}">
+                    <input type="hidden" name="sort" value="{{ $filters['sort'] ?? 'latest' }}">
+
+                    <label for="per_page" class="max-w-[72px] text-sm font-medium leading-5 text-body-gray lg:max-w-none">Rows per page:</label>
+                    <select
+                        id="per_page"
+                        name="per_page"
+                        onchange="this.form.submit()"
+                        class="field-select w-[112px] shrink-0 text-sm font-medium"
+                    >
+                        @foreach ($perPageOptions as $option)
+                            <option value="{{ $option }}" @selected($perPage === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </form>
+
+                <div class="lg:ml-auto">
+                    {{ $promotions->links() }}
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

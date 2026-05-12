@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .field-shell {
+        @apply relative;
+    }
+
+    .field-base {
+        @apply w-full rounded-[16px] border border-[#d8d8d8] bg-white px-4 py-[0.78rem] text-[15px] leading-5 text-uber-black shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition duration-200 placeholder:text-[#7c7c7c];
+        @apply focus:border-[#9f9f9f] focus:outline-none focus:ring-4 focus:ring-[#111111]/10;
+    }
+
+    .field-base:disabled,
+    .field-base[readonly] {
+        @apply cursor-not-allowed bg-[#f5f5f5] text-body-gray;
+    }
+
+    .field-select {
+        @apply field-base appearance-none bg-[linear-gradient(45deg,transparent_50%,#595959_50%),linear-gradient(135deg,#595959_50%,transparent_50%)] bg-[length:8px_8px,8px_8px] bg-[position:calc(100%-22px)_53%,calc(100%-16px)_53%] bg-no-repeat pr-12;
+    }
+
+    .field-textarea {
+        @apply field-base min-h-[116px] resize-y;
+    }
+
+    .field-file {
+        @apply field-base cursor-pointer px-3 py-3 text-sm text-body-gray file:mr-3 file:rounded-[12px] file:border-0 file:bg-chip-gray file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-uber-black file:transition hover:file:bg-hover-gray;
+    }
+
+    .field-checkbox {
+        @apply h-5 w-5 rounded-[6px] border-[#cfcfcf] text-uber-black shadow-sm transition focus:ring-4 focus:ring-[#111111]/10;
+    }
+}
