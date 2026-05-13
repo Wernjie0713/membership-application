@@ -47,6 +47,7 @@ The implementation keeps `users` as the login identity and `members` as the busi
 ### Member
 
 - Register a login account
+- Verify email address
 - Complete membership onboarding
 - Maintain own member profile
 - View own referral code
@@ -58,7 +59,8 @@ The implementation keeps `users` as the login identity and `members` as the busi
 This project intentionally uses a two-step registration flow:
 
 1. Public registration creates the login account only
-2. After sign in, the user completes the membership profile with:
+2. The user verifies their email address
+3. After sign in, the user completes the membership profile with:
    - personal details
    - addresses
    - uploads
@@ -154,6 +156,12 @@ php artisan migrate --seed
 php artisan storage:link
 ```
 
+### Mail configuration
+
+Email verification and password reset require a working mail configuration in `.env`.
+
+For local development, use a tool such as Mailpit or Mailhog, or configure a real SMTP provider before testing these flows.
+
 ### Run locally
 
 For backend:
@@ -208,6 +216,9 @@ php artisan test
 The current suite covers:
 
 - auth flow
+- email verification
+- password reset
+- deactivated-account access blocking
 - two-step registration
 - member management
 - referral tree behavior
@@ -217,7 +228,7 @@ The current suite covers:
 
 ## Notes
 
-- The interview brief originally reads like a one-step member registration flow. This implementation intentionally uses a two-step flow to better separate authentication from membership onboarding.
+- The interview brief originally reads like a one-step member registration flow. This implementation intentionally uses a two-step flow with email verification to better separate authentication from membership onboarding.
 - Admin deletion deactivates the linked login account and keeps the member visible in admin history, while member self-delete permanently removes personal data and leaves an anonymized tombstone for referral/reward history.
 - The project currently uses Blade as the frontend, which is aligned with the interview brief.
 
