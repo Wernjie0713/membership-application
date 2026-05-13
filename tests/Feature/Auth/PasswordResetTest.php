@@ -25,9 +25,34 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
 
+        $response->assertSessionHas('status', \App\Http\Controllers\Auth\PasswordResetLinkController::RESET_REQUESTED_MESSAGE);
         Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_reset_password_request_returns_generic_message_for_unknown_email(): void
+    {
+        Notification::fake();
+
+        $response = $this->post('/forgot-password', ['email' => 'unknown@example.com']);
+
+        $response->assertSessionHas('status', \App\Http\Controllers\Auth\PasswordResetLinkController::RESET_REQUESTED_MESSAGE);
+        Notification::assertNothingSent();
+    }
+
+    public function test_deactivated_users_do_not_receive_password_reset_links(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'deactivated_at' => now(),
+        ]);
+
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
+
+        $response->assertSessionHas('status', \App\Http\Controllers\Auth\PasswordResetLinkController::RESET_REQUESTED_MESSAGE);
+        Notification::assertNothingSent();
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
@@ -66,6 +91,25 @@ class PasswordResetTest extends TestCase
             $response
                 ->assertSessionHasNoErrors()
                 ->assertRedirect(route('login'));
+
+            return true;
+        });
+    }
+
+    public function test_password_reset_notification_uses_the_configured_app_url(): void
+    {
+        Notification::fake();
+
+        config()->set('app.url', 'https://members.example.com');
+
+        $user = User::factory()->create();
+
+        $this->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+            $mailMessage = $notification->toMail($user);
+
+            $this->assertStringStartsWith('https://members.example.com/reset-password/', $mailMessage->actionUrl);
 
             return true;
         });

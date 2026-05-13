@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->member()->create();
+        $user = User::factory()->member()->unverified()->create();
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -27,7 +27,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('member.onboarding.create', absolute: false));
+        $response->assertRedirect(route('verification.notice', absolute: false));
     }
 
     public function test_admin_users_are_redirected_to_admin_dashboard_after_login(): void

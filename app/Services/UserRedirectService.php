@@ -8,6 +8,10 @@ class UserRedirectService
 {
     public function routeNameFor(User $user): string
     {
+        if (! $user->hasVerifiedEmail()) {
+            return 'verification.notice';
+        }
+
         if ($user->isAdmin()) {
             return 'admin.dashboard';
         }

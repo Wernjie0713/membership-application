@@ -27,7 +27,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('member.onboarding.create', absolute: false));
+        $response->assertRedirect(route('verification.notice', absolute: false));
 
         /** @var User $user */
         $user = auth()->user();
@@ -35,5 +35,6 @@ class RegistrationTest extends TestCase
         $this->assertTrue($user->isMember());
         $this->assertNull($user->member);
         $this->assertSame('testuser', $user->username);
+        $this->assertNull($user->email_verified_at);
     }
 }

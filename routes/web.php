@@ -13,7 +13,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth', 'active-user'])->group(function () {
+Route::middleware(['auth', 'active-user', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
     Route::prefix('member')->name('member.')->middleware('can:complete-member-profile')->group(function () {
@@ -23,7 +23,7 @@ Route::middleware(['auth', 'active-user'])->group(function () {
         Route::patch('/profile', [MemberPortalController::class, 'update'])->name('profile.update');
         Route::post('/profile/image', [MemberPortalController::class, 'updateProfileImage'])->name('profile.image.update');
 
-        Route::middleware(['verified', 'can:access-member-portal'])->group(function () {
+        Route::middleware(['can:access-member-portal'])->group(function () {
             Route::get('/dashboard', [MemberPortalController::class, 'dashboard'])->name('dashboard');
         });
     });
