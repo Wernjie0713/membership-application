@@ -374,7 +374,6 @@ class MemberManagementTest extends TestCase
         $response = $this
             ->actingAs($admin)
             ->put(route('members.update', $member), [
-                'username' => $member->user->username,
                 'first_name' => 'Profile',
                 'last_name' => 'Image',
                 'email' => $member->email,
@@ -402,6 +401,128 @@ class MemberManagementTest extends TestCase
 
         $this->assertNotNull($member->profileImage);
         Storage::disk('public')->assertExists($member->profileImage->path);
+    }
+
+    public function test_admin_member_update_does_not_change_login_email(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $address = $member->addresses()->create([
+            'address_type_id' => AddressType::first()->id,
+            'line_1' => '123 Update Street',
+            'line_2' => 'Unit 12',
+            'city' => 'Singapore',
+            'state' => 'Central',
+            'postal_code' => '123456',
+            'country' => 'Singapore',
+            'is_primary' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->put(route('members.update', $member), [
+                'first_name' => 'Updated',
+                'last_name' => 'Member',
+                'email' => $member->email,
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
+                'status' => Member::STATUS_ACTIVE,
+                'date_of_birth' => optional($member->date_of_birth)->toDateString(),
+                'addresses' => [[
+                    'id' => $address->id,
+                    'address_type_id' => $address->address_type_id,
+                    'line_1' => $address->line_1,
+                    'line_2' => $address->line_2,
+                    'city' => $address->city,
+                    'state' => $address->state,
+                    'postal_code' => $address->postal_code,
+                    'country' => $address->country,
+                    'is_primary' => 1,
+                ]],
+            ]);
+
+        $response->assertRedirect(route('members.show', $member));
+
+        $member->refresh();
+
+        $this->assertSame($member->user->fresh()->email, $member->email);
+        $this->assertSame('Updated', $member->first_name);
+    }
+
+    public function test_member_update_rejects_address_ids_owned_by_another_member(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $member = Member::factory()->completed()->create([
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $memberAddress = $member->addresses()->create([
+            'address_type_id' => AddressType::orderBy('name')->first()->id,
+            'line_1' => '123 Update Street',
+            'line_2' => 'Unit 12',
+            'city' => 'Singapore',
+            'state' => 'Central',
+            'postal_code' => '123456',
+            'country' => 'Singapore',
+            'is_primary' => true,
+        ]);
+
+        $foreignAddress = Member::factory()->completed()->create([
+            'status' => Member::STATUS_ACTIVE,
+        ])->addresses()->create([
+            'address_type_id' => AddressType::orderBy('name')->skip(1)->first()->id,
+            'line_1' => '99 Foreign Street',
+            'line_2' => '',
+            'city' => 'Johor Bahru',
+            'state' => 'Johor',
+            'postal_code' => '81110',
+            'country' => 'Malaysia',
+            'is_primary' => false,
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->from(route('members.edit', $member))
+            ->put(route('members.update', $member), [
+                'first_name' => $member->first_name,
+                'last_name' => $member->last_name,
+                'email' => $member->email,
+                'phone_country_code' => '+65',
+                'phone_number' => '12345678',
+                'status' => Member::STATUS_ACTIVE,
+                'date_of_birth' => optional($member->date_of_birth)->toDateString(),
+                'addresses' => [
+                    [
+                        'id' => $memberAddress->id,
+                        'address_type_id' => $memberAddress->address_type_id,
+                        'line_1' => $memberAddress->line_1,
+                        'line_2' => $memberAddress->line_2,
+                        'city' => $memberAddress->city,
+                        'state' => $memberAddress->state,
+                        'postal_code' => $memberAddress->postal_code,
+                        'country' => $memberAddress->country,
+                        'is_primary' => 1,
+                    ],
+                    [
+                        'id' => $foreignAddress->id,
+                        'address_type_id' => $foreignAddress->address_type_id,
+                        'line_1' => $foreignAddress->line_1,
+                        'line_2' => $foreignAddress->line_2,
+                        'city' => $foreignAddress->city,
+                        'state' => $foreignAddress->state,
+                        'postal_code' => $foreignAddress->postal_code,
+                        'country' => $foreignAddress->country,
+                        'is_primary' => 0,
+                    ],
+                ],
+            ]);
+
+        $response
+            ->assertRedirect(route('members.edit', $member))
+            ->assertSessionHasErrors('addresses');
     }
 
     public function test_saved_proof_of_address_persists_and_renders_on_member_edit_page(): void

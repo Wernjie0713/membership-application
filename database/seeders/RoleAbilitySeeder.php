@@ -20,15 +20,12 @@ class RoleAbilitySeeder extends Seeder
             'manage-members',
             'manage-promotions',
             'view-reward-reports',
-            'export-members',
             'export-rewards',
         ]);
 
         Bouncer::allow('member')->to([
             'complete-member-profile',
             'access-member-portal',
-            'view-own-referrals',
-            'view-own-rewards',
         ]);
     }
 }

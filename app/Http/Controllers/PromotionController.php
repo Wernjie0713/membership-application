@@ -123,6 +123,12 @@ class PromotionController extends Controller
      */
     public function destroy(Promotion $promotion): RedirectResponse
     {
+        if ($promotion->rewardAchievers()->exists() || $promotion->rewardTiers()->exists()) {
+            return redirect()
+                ->route('promotions.edit', $promotion)
+                ->with('status', 'This promotion cannot be deleted because it has configured tiers or reward history. Change its status instead.');
+        }
+
         $promotion->delete();
 
         return redirect()

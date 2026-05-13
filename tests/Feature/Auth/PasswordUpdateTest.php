@@ -48,4 +48,24 @@ class PasswordUpdateTest extends TestCase
             ->assertSessionHasErrorsIn('updatePassword', 'current_password')
             ->assertRedirect('/profile');
     }
+
+    public function test_deactivated_user_cannot_update_password_mid_session(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $user->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $response = $this->from('/profile')->put('/password', [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
 }

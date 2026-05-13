@@ -22,7 +22,7 @@
                     'showUsernameField' => false,
                     'showProfileImageEditor' => false,
                     'showEmailField' => true,
-                    'readonlyEmail' => false,
+                    'readonlyEmail' => true,
                     'showStatusField' => true,
                 ])
             </form>

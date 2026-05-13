@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rule;
 
 class UpdateMemberRequest extends FormRequest
@@ -28,22 +29,8 @@ class UpdateMemberRequest extends FormRequest
         $member = $this->route('member');
 
         return [
-            'username' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique(User::class, 'username')->ignore($member->user_id),
-            ],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('members', 'email')->ignore($member),
-                Rule::unique(User::class, 'email')->ignore($member->user_id),
-            ],
-            'password' => ['nullable', 'confirmed', 'string', 'min:8'],
             'phone_country_code' => ['nullable', 'regex:/^\+\d{1,4}$/'],
             'phone_number' => ['nullable', 'regex:/^\d{6,15}$/'],
             'status' => ['required', Rule::in(Member::STATUSES)],
@@ -71,10 +58,11 @@ class UpdateMemberRequest extends FormRequest
     public function after(): array
     {
         return [
-            function ($validator) {
+            function (Validator $validator) {
                 $this->validatePhoneParts($validator);
                 $this->validatePrimaryAddress($validator);
                 $this->validateUniqueAddressTypes($validator);
+                $this->validateAddressOwnership($validator);
             },
         ];
     }
@@ -108,6 +96,34 @@ class UpdateMemberRequest extends FormRequest
 
         if ($typeIds->count() !== $typeIds->unique()->count()) {
             $validator->errors()->add('addresses', 'Each address type can only be used once per member.');
+        }
+    }
+
+    protected function validateAddressOwnership(Validator $validator): void
+    {
+        /** @var Member $member */
+        $member = $this->route('member');
+
+        $submittedIds = collect($this->input('addresses', []))
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($value) => (int) $value)
+            ->values();
+
+        if ($submittedIds->isEmpty()) {
+            return;
+        }
+
+        $ownedIds = $member->addresses()
+            ->whereIn('id', $submittedIds)
+            ->pluck('id')
+            ->map(fn ($value) => (int) $value)
+            ->all();
+
+        $invalidIds = $submittedIds->diff($ownedIds);
+
+        if ($invalidIds->isNotEmpty()) {
+            $validator->errors()->add('addresses', 'One or more submitted addresses do not belong to this member.');
         }
     }
 }

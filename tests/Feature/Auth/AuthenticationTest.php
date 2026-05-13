@@ -81,6 +81,25 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_deactivated_users_are_logged_out_on_auth_routes_too(): void
+    {
+        $user = User::factory()->member()->create();
+
+        $this->actingAs($user);
+
+        $user->update([
+            'deactivated_at' => now(),
+        ]);
+
+        $response = $this->get(route('verification.notice'));
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+        $response->assertSessionHasErrors([
+            'email' => \App\Http\Requests\Auth\LoginRequest::DEACTIVATED_MESSAGE,
+        ]);
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();

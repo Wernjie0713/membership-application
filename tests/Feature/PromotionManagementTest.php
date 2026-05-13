@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Promotion;
+use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -94,5 +95,71 @@ class PromotionManagementTest extends TestCase
             'id' => $promotion->id,
             'status' => 'active',
         ]);
+    }
+
+    public function test_admin_cannot_delete_promotion_with_configured_tiers(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $promotion = Promotion::create([
+            'name' => 'Tiered Promotion',
+            'description' => 'Has configured tiers',
+            'status' => 'draft',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addDays(30)->toDateString(),
+        ]);
+
+        $promotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('promotions.destroy', $promotion));
+
+        $response->assertRedirect(route('promotions.edit', $promotion));
+        $this->assertDatabaseHas('promotions', ['id' => $promotion->id]);
+    }
+
+    public function test_admin_cannot_delete_promotion_with_reward_history(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $promotion = Promotion::create([
+            'name' => 'Historic Promotion',
+            'description' => 'Has reward history',
+            'status' => 'inactive',
+            'start_date' => now()->subMonth()->toDateString(),
+            'end_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $tier = $promotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $member = Member::factory()->completed()->create();
+
+        $member->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 10,
+            'referral_count' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'earned_at' => now()->subDays(2),
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('promotions.destroy', $promotion));
+
+        $response->assertRedirect(route('promotions.edit', $promotion));
+        $this->assertDatabaseHas('promotions', ['id' => $promotion->id]);
     }
 }

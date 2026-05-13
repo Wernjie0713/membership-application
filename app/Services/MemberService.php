@@ -219,16 +219,14 @@ class MemberService
             return;
         }
 
-        $payload = [
-            'username' => $data['username'] ?? $user->username,
-        ];
-
-        if (! empty($data['email'])) {
-            $payload['email'] = $data['email'];
-        }
+        $payload = [];
 
         if (! empty($data['password'])) {
             $payload['password'] = $data['password'];
+        }
+
+        if ($payload === []) {
+            return;
         }
 
         $user->update($payload);

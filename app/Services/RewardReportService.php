@@ -21,14 +21,26 @@ class RewardReportService
                                 ->where('first_name', 'like', $like)
                                 ->orWhere('last_name', 'like', $like)
                                 ->orWhere('email', 'like', $like)
-                                ->orWhereRaw("first_name || ' ' || last_name like ?", [$like]);
+                                ->orWhere(function (Builder $nameQuery) use ($like) {
+                                    $connectionDriver = $nameQuery->getModel()->getConnection()->getDriverName();
+
+                                    if ($connectionDriver === 'mysql') {
+                                        $nameQuery->whereRaw("CONCAT(first_name, ' ', last_name) like ?", [$like]);
+
+                                        return;
+                                    }
+
+                                    $nameQuery->whereRaw("first_name || ' ' || last_name like ?", [$like]);
+                                });
                         })
                         ->orWhereHas('promotion', function (Builder $promotionQuery) use ($like) {
                             $promotionQuery->where('name', 'like', $like);
                         });
                 });
             })
-            ->when($filters['promotion_id'] ?? null, fn (Builder $query, $promotionId) => $query->where('promotion_id', $promotionId));
+            ->when($filters['promotion_id'] ?? null, fn (Builder $query, $promotionId) => $query->where('promotion_id', $promotionId))
+            ->when($filters['start_date'] ?? null, fn (Builder $query, $startDate) => $query->whereDate('earned_at', '>=', $startDate))
+            ->when($filters['end_date'] ?? null, fn (Builder $query, $endDate) => $query->whereDate('earned_at', '<=', $endDate));
 
         return match ($filters['sort'] ?? 'latest') {
             'oldest' => $query->oldest('earned_at'),

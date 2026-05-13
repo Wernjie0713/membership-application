@@ -182,7 +182,9 @@
                         <x-input-label for="email" value="Email" />
                         <x-text-input id="email" name="email" type="email" class="mt-1 block w-full {{ $readonlyEmail ? 'bg-chip-gray text-body-gray cursor-not-allowed opacity-70' : '' }}" :value="old('email', $member->email)" x-model="email" :readonly="$readonlyEmail" :required="! $readonlyEmail" />
                         @if ($readonlyEmail)
-                            <p class="mt-2 text-xs font-medium text-body-gray uppercase tracking-wide">Your login email is managed from the account settings page.</p>
+                            <p class="mt-2 text-xs font-medium text-body-gray uppercase tracking-wide">
+                                {{ request()->routeIs('members.edit') ? 'This login email is read-only here and managed through the account identity flow.' : 'Your login email is managed from the account settings page.' }}
+                            </p>
                         @endif
                         <x-input-error class="mt-2" :messages="$errors->get('email')" />
                     </div>

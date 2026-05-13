@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Member;
 use App\Models\Promotion;
+use App\Models\RewardAchiever;
 use App\Models\User;
 use App\Services\PromotionRewardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -248,5 +249,112 @@ class RewardReportTest extends TestCase
         $response->assertOk();
         $response->assertSee('Nadia Tan');
         $response->assertDontSee('USD 120.00');
+    }
+
+    public function test_reward_report_can_filter_by_search_and_date_range(): void
+    {
+        $user = User::factory()->admin()->create();
+
+        $promotion = Promotion::create([
+            'name' => 'Date Filter Campaign',
+            'status' => 'active',
+            'start_date' => now()->subMonth(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $tier = $promotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $matchingMember = Member::factory()->completed()->create([
+            'first_name' => 'Filter',
+            'last_name' => 'Match',
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $otherMember = Member::factory()->completed()->create([
+            'first_name' => 'Filter',
+            'last_name' => 'Miss',
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $matchingMember->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 10,
+            'referral_count' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'earned_at' => now()->subDays(2),
+        ]);
+
+        $otherMember->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 12,
+            'referral_count' => 12,
+            'reward_amount' => 120,
+            'currency' => 'USD',
+            'earned_at' => now()->subDays(10),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('rewards.index', [
+            'search' => 'Filter Match',
+            'start_date' => now()->subDays(3)->toDateString(),
+            'end_date' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Filter Match');
+        $response->assertDontSee('USD 120.00');
+    }
+
+    public function test_reward_report_full_name_search_matches_mysql_safe_expression(): void
+    {
+        $user = User::factory()->admin()->create();
+
+        $promotion = Promotion::create([
+            'name' => 'Full Name Campaign',
+            'status' => 'active',
+            'start_date' => now()->subMonth(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $tier = $promotion->rewardTiers()->create([
+            'tier' => 1,
+            'referral_threshold' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'is_recurring' => false,
+            'step_increment' => null,
+        ]);
+
+        $matchingMember = Member::factory()->completed()->create([
+            'first_name' => 'Jenny',
+            'last_name' => 'Tan',
+            'status' => Member::STATUS_ACTIVE,
+        ]);
+
+        $matchingMember->rewardAchievers()->create([
+            'promotion_id' => $promotion->id,
+            'promotion_reward_tier_id' => $tier->id,
+            'threshold_reached' => 10,
+            'referral_count' => 10,
+            'reward_amount' => 100,
+            'currency' => 'USD',
+            'earned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('rewards.index', [
+            'search' => 'Jenny Tan',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Jenny Tan');
     }
 }

@@ -2,6 +2,8 @@
     @php
         $hasActiveFilters = filled($filters['search'] ?? null)
             || filled($filters['promotion_id'] ?? null)
+            || filled($filters['start_date'] ?? null)
+            || filled($filters['end_date'] ?? null)
             || (($filters['sort'] ?? 'latest') !== 'latest')
             || (($perPage ?? 10) !== 10);
 
@@ -26,7 +28,7 @@
             <x-flash-message />
 
             <div class="rounded-[8px] bg-white p-6 shadow-uber-card">
-                <form method="GET" action="{{ route('rewards.index') }}" class="grid gap-6 lg:grid-cols-[1.4fr_1fr_0.9fr_auto]">
+                <form method="GET" action="{{ route('rewards.index') }}" class="grid gap-6 lg:grid-cols-5">
                     <div>
                         <x-input-label for="search" value="Search" />
                         <x-text-input id="search" name="search" type="text" class="mt-2 block w-full" :value="$filters['search'] ?? ''" placeholder="Member or promotion" />
@@ -41,6 +43,14 @@
                         </select>
                     </div>
                     <div>
+                        <x-input-label for="start_date" value="Start Date" />
+                        <x-text-input id="start_date" name="start_date" type="date" class="mt-2 block w-full" :value="$filters['start_date'] ?? ''" />
+                    </div>
+                    <div>
+                        <x-input-label for="end_date" value="End Date" />
+                        <x-text-input id="end_date" name="end_date" type="date" class="mt-2 block w-full" :value="$filters['end_date'] ?? ''" />
+                    </div>
+                    <div>
                         <x-input-label for="sort" value="Sort By" />
                         <select id="sort" name="sort" class="field-select mt-2 block w-full">
                             @foreach ($sortOptions as $value => $label)
@@ -48,7 +58,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="flex flex-wrap items-end gap-3 lg:justify-end">
+                    <div class="flex flex-wrap items-end gap-3 lg:col-span-6 lg:justify-end">
                         <x-primary-button class="min-w-[126px] justify-center">Apply Filters</x-primary-button>
                         <a
                             href="{{ $hasActiveFilters ? route('rewards.index') : '#' }}"
@@ -115,6 +125,8 @@
                 <form method="GET" action="{{ route('rewards.index') }}" class="flex flex-wrap items-center gap-3 lg:flex-nowrap">
                     <input type="hidden" name="search" value="{{ $filters['search'] ?? '' }}">
                     <input type="hidden" name="promotion_id" value="{{ $filters['promotion_id'] ?? '' }}">
+                    <input type="hidden" name="start_date" value="{{ $filters['start_date'] ?? '' }}">
+                    <input type="hidden" name="end_date" value="{{ $filters['end_date'] ?? '' }}">
                     <input type="hidden" name="sort" value="{{ $filters['sort'] ?? 'latest' }}">
 
                     <label for="per_page" class="max-w-[72px] text-sm font-medium leading-5 text-body-gray lg:max-w-none">Rows per page:</label>
